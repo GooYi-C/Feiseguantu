@@ -1,0 +1,205 @@
+// ═══════════════════════════════════════════════════════════════
+// 绯色官途 · 主题变量
+// ═══════════════════════════════════════════════════════════════
+
+:root {
+  // ─── 官方肃正系 ───
+  --color-bg-dark: #0f1117;
+  --color-bg-card: #161922;
+  --color-bg-elevated: #1e212c;
+  --color-border: #242838;
+  --color-border-light: #2d3348;
+
+  // ─── 金色点缀 ───
+  --color-gold: #d8a657;
+  --color-gold-light: #e8c078;
+  --color-gold-dim: #9a7a3a;
+
+  // ─── 绯色互动系 ───
+  --color-romance: #c41e3a;
+  --color-romance-light: #ff4d6d;
+  --color-romance-gradient: linear-gradient(135deg, #c41e3a 0%, #ff4d6d 100%);
+  --color-romance-glow: rgba(196, 30, 58, 0.4);
+
+  // ─── 语义色 ───
+  --color-success: #4ac18e;
+  --color-info: #7aa2f7;
+  --color-warning: #e0c36c;
+  --color-danger: #ff6b6b;
+
+  // ─── 文字色 ───
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #a0a5b8;
+  --color-text-muted: #6a7088;
+  --color-text-disabled: #484c5c;
+
+  // ─── 关系类型色 ───
+  --color-rel-patron: #d8a657; // 靠山-金色
+  --color-rel-romance: #ff4d6d; // 绯色-粉红
+  --color-rel-rival: #ff8844; // 竞争-橙红
+  --color-rel-enemy: #e63946; // 宿敌-深红
+  --color-rel-family: #7aa2f7; // 家属-柔蓝
+  --color-rel-official: #a0a5b8; // 官场-银灰
+
+  // ─── 字体 ───
+  --font-sans: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --font-display: 'Inter', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  // ─── 间距 ───
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+
+  // ─── 圆角 ───
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  // ─── 阴影 ───
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-gold: 0 0 20px rgba(216, 166, 87, 0.3);
+  --shadow-glow-romance: 0 0 20px rgba(255, 77, 109, 0.3);
+
+  // ─── 过渡 ───
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  // ─── 层级 ───
+  --z-dropdown: 100;
+  --z-drawer: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 基础样式重置
+// ═══════════════════════════════════════════════════════════════
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 滚动条样式
+// ═══════════════════════════════════════════════════════════════
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+  border-radius: var(--radius-full);
+
+  &:hover {
+    background: var(--color-text-muted);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 工具类
+// ═══════════════════════════════════════════════════════════════
+
+.text-gold {
+  color: var(--color-gold);
+}
+
+.text-romance {
+  color: var(--color-romance-light);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.bg-romance-gradient {
+  background: var(--color-romance-gradient);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
