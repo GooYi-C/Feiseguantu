@@ -318,29 +318,29 @@
 
 #### 修改的文件清单
 
-| 文件路径                                     | 操作 | 说明                             |
-| -------------------------------------------- | ---- | -------------------------------- |
-| `components/character/CharacterForm.vue`     | 创建 | 完整人物编辑表单                 |
-| `components/character/AddCharacterModal.vue` | 创建 | 新增人物弹窗（含模板）           |
-| `components/character/CharacterDrawer.vue`   | 创建 | 角色详情抽屉                     |
-| `components/character/index.ts`              | 创建 | 角色组件统一导出                 |
-| `components/common/CharacterName.vue`        | 创建 | 统一角色名组件                   |
-| `components/common/SliderField.vue`          | 修改 | showValue 默认改为 false         |
-| `components/variable/SectionAccordion.vue`   | 创建 | 可折叠区块组件                   |
-| `components/variable/RecordTable.vue`        | 创建 | Record 类型编辑器                |
-| `components/variable/index.ts`               | 创建 | 变量组件统一导出                 |
-| `stores/useCharacterDrawer.ts`               | 创建 | 角色抽屉全局状态                 |
-| `stores/index.ts`                            | 修改 | 导出 useCharacterDrawer          |
-| `views/Characters.vue`                       | 修改 | 集成编辑功能、修复筛选           |
+| 文件路径                                     | 操作 | 说明                              |
+| -------------------------------------------- | ---- | --------------------------------- |
+| `components/character/CharacterForm.vue`     | 创建 | 完整人物编辑表单                  |
+| `components/character/AddCharacterModal.vue` | 创建 | 新增人物弹窗（含模板）            |
+| `components/character/CharacterDrawer.vue`   | 创建 | 角色详情抽屉                      |
+| `components/character/index.ts`              | 创建 | 角色组件统一导出                  |
+| `components/common/CharacterName.vue`        | 创建 | 统一角色名组件                    |
+| `components/common/SliderField.vue`          | 修改 | showValue 默认改为 false          |
+| `components/variable/SectionAccordion.vue`   | 创建 | 可折叠区块组件                    |
+| `components/variable/RecordTable.vue`        | 创建 | Record 类型编辑器                 |
+| `components/variable/index.ts`               | 创建 | 变量组件统一导出                  |
+| `stores/useCharacterDrawer.ts`               | 创建 | 角色抽屉全局状态                  |
+| `stores/index.ts`                            | 修改 | 导出 useCharacterDrawer           |
+| `views/Characters.vue`                       | 修改 | 集成编辑功能、修复筛选            |
 | `views/Variables.vue`                        | 重构 | 使用 SectionAccordion/RecordTable |
-| `views/Dashboard.vue`                        | 修改 | 集成 CharacterName               |
-| `views/Opportunities.vue`                    | 修改 | 集成 CharacterName               |
-| `views/Assets.vue`                           | 修改 | 集成 CharacterName               |
-| `views/Relations.vue`                        | 修改 | 集成 CharacterName               |
-| `views/Secrets.vue`                          | 修改 | 集成 CharacterName               |
-| `views/Faction.vue`                          | 修改 | 集成 CharacterName               |
-| `views/Romance.vue`                          | 修改 | 移除 CharacterName（用户要求）   |
-| `app.vue`                                    | 修改 | 添加全局 CharacterDrawer         |
+| `views/Dashboard.vue`                        | 修改 | 集成 CharacterName                |
+| `views/Opportunities.vue`                    | 修改 | 集成 CharacterName                |
+| `views/Assets.vue`                           | 修改 | 集成 CharacterName                |
+| `views/Relations.vue`                        | 修改 | 集成 CharacterName                |
+| `views/Secrets.vue`                          | 修改 | 集成 CharacterName                |
+| `views/Faction.vue`                          | 修改 | 集成 CharacterName                |
+| `views/Romance.vue`                          | 修改 | 移除 CharacterName（用户要求）    |
+| `app.vue`                                    | 修改 | 添加全局 CharacterDrawer          |
 
 ---
 
@@ -2209,7 +2209,7 @@ function hideTooltip() {
 
 > **来源**: 用户反馈中关于页面合并、功能整合的需求
 
-### 任务 3.1: 仪表盘整合「当前场景」
+### 任务 3.1: 仪表盘整合「当前场景」| 「个人资产」和 [暗账] 页面合成新的 [资产暗账] 页面
 
 | 属性         | 值                                                                         |
 | ------------ | -------------------------------------------------------------------------- |
