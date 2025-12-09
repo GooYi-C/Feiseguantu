@@ -39,6 +39,10 @@
             <i class="far fa-clock"></i>
             {{ 时空舆情.当前时间 }}
           </span>
+          <span v-if="时空舆情.当前地点 && 时空舆情.当前地点 !== '无'" class="location-display">
+            <i class="fas fa-map-marker-alt"></i>
+            {{ 时空舆情.当前地点 }}
+          </span>
         </div>
         <div class="header-right">
           <span v-if="个人档案.基本信息.姓名 !== '无'" class="player-info">
@@ -54,18 +58,6 @@
           </button>
         </div>
       </header>
-
-      <!-- 面包屑导航 -->
-      <div v-if="currentRoute && route.path !== '/'" class="breadcrumb">
-        <router-link to="/" class="breadcrumb-item">
-          <i class="fas fa-gauge-high"></i>
-        </router-link>
-        <span class="breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
-        <span class="breadcrumb-item active">
-          <i class="fas" :class="currentRoute.meta?.icon"></i>
-          <span>{{ currentRoute.meta?.title }}</span>
-        </span>
-      </div>
 
       <!-- 主内容区 -->
       <main class="main-content">
@@ -147,10 +139,12 @@ function getNavBadge(name: string): number | null {
       return gameData.人物总数 || null;
     case 'romance':
       return gameData.绯色对象列表.length || null;
-    case 'secrets': {
+    case 'assets-secrets': {
+      // 资产暗账：统计把柄+政治地雷+人情债数量
       const secrets = gameData.暗账;
       const count =
         Object.keys(secrets.被握把柄).length +
+        Object.keys(secrets.手握把柄).length +
         Object.keys(secrets.政治地雷).length +
         Object.keys(secrets.人情债).length;
       return count || null;
@@ -262,20 +256,14 @@ onMounted(async () => {
   &.nav-characters i {
     color: #9b59b6;
   }
-  &.nav-relations i {
-    color: #3498db;
-  }
   &.nav-romance i {
     color: var(--color-romance);
   }
   &.nav-faction i {
     color: #27ae60;
   }
-  &.nav-assets i {
-    color: #f39c12;
-  }
-  &.nav-secrets i {
-    color: #e74c3c;
+  &.nav-assets-secrets i {
+    color: #e67e22; // 橙色 - 资产暗账
   }
   &.nav-opportunities i {
     color: #1abc9c;
@@ -372,6 +360,10 @@ onMounted(async () => {
     margin-right: 4px;
     color: var(--color-gold);
   }
+
+  .location-display i {
+    color: #3498db;
+  }
 }
 
 .header-right {
@@ -433,39 +425,6 @@ onMounted(async () => {
     opacity: 0.5;
     cursor: not-allowed;
   }
-}
-
-// ═══ 面包屑 ═══
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text-muted);
-  text-decoration: none;
-
-  &:hover:not(.active) {
-    color: var(--color-text-secondary);
-  }
-
-  &.active {
-    color: var(--color-text-primary);
-  }
-}
-
-.breadcrumb-sep {
-  color: var(--color-text-muted);
-  font-size: 10px;
 }
 
 // ═══ 主内容区 ═══

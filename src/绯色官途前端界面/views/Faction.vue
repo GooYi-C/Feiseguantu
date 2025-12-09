@@ -1,56 +1,63 @@
 <template>
   <div class="faction-page">
-    <!-- 我方派系 -->
-    <section class="card our-faction">
-      <div class="card-header">
-        <h2><i class="fas fa-flag"></i> 我方派系</h2>
-      </div>
-      <div class="card-body">
+    <!-- 紧凑单页布局：我方派系 + 主要派系 -->
+    <div class="faction-layout">
+      <!-- 左侧：我方派系 -->
+      <section class="our-faction-card">
+        <div class="faction-badge">
+          <i class="fas fa-flag"></i>
+        </div>
         <h3 class="faction-name">{{ 我方派系.派系名称 }}</h3>
-        <div class="faction-info">
-          <div class="info-item">
-            <span class="label">核心人物</span>
-            <span class="value gold"><CharacterName :name="我方派系.核心人物" /></span>
+        <div class="faction-core">
+          <span class="label">核心人物</span>
+          <CharacterName :name="我方派系.核心人物" class="core-char" />
+        </div>
+        <div class="faction-stats">
+          <div class="stat">
+            <span class="stat-label">实力评估</span>
+            <span class="stat-value" :class="strengthClass(我方派系.实力评估)">{{ 我方派系.实力评估 }}</span>
           </div>
-          <div class="info-item">
-            <span class="label">势力范围</span>
-            <span class="value">{{ 我方派系.势力范围 }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">实力评估</span>
-            <span class="value" :class="strengthClass(我方派系.实力评估)">{{ 我方派系.实力评估 }}</span>
+          <div class="stat">
+            <span class="stat-label">势力范围</span>
+            <span class="stat-value">{{ 我方派系.势力范围 }}</span>
           </div>
         </div>
-        <div class="faction-trend" v-if="我方派系.近期动向 !== '无'">
+        <div v-if="我方派系.近期动向 !== '无'" class="faction-trend">
           <i class="fas fa-chart-line"></i>
           <span>{{ 我方派系.近期动向 }}</span>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 主要派系列表 -->
-    <section class="card">
-      <div class="card-header">
-        <h2><i class="fas fa-sitemap"></i> 主要派系</h2>
-      </div>
-      <div class="card-body">
-        <div class="faction-list" v-if="Object.keys(主要派系).length">
-          <div v-for="(faction, name) in 主要派系" :key="name" class="faction-item">
-            <div class="faction-header">
-              <span class="faction-title">{{ faction.派系名称 || name }}</span>
+      <!-- 右侧：主要派系网格 -->
+      <section class="major-factions">
+        <div class="section-header">
+          <h2><i class="fas fa-sitemap"></i> 主要派系</h2>
+        </div>
+        <div class="factions-grid" v-if="Object.keys(主要派系).length">
+          <div
+            v-for="(faction, name) in 主要派系"
+            :key="name"
+            class="faction-card"
+            :class="relationStyleClass(faction.与我派系关系)"
+          >
+            <div class="card-header">
+              <span class="card-title">{{ faction.派系名称 || name }}</span>
               <span class="relation-tag" :class="relationClass(faction.与我派系关系)">
                 {{ faction.与我派系关系 }}
               </span>
             </div>
-            <div class="faction-meta">
-              <span class="core-leader"><i class="fas fa-user-tie"></i> <CharacterName :name="faction.核心人物" /></span>
-              <span :class="strengthClass(faction.实力评估)">{{ faction.实力评估 }}</span>
-            </div>
-            <div class="faction-scope" v-if="faction.势力范围 !== '无'">
-              <i class="fas fa-map"></i> {{ faction.势力范围 }}
-            </div>
-            <div class="faction-trend" v-if="faction.近期动向 !== '无'">
-              <i class="fas fa-clock"></i> {{ faction.近期动向 }}
+            <div class="card-body">
+              <div class="card-leader">
+                <i class="fas fa-user-tie"></i>
+                <CharacterName :name="faction.核心人物" />
+                <span class="strength" :class="strengthClass(faction.实力评估)">{{ faction.实力评估 }}</span>
+              </div>
+              <div v-if="faction.势力范围 !== '无'" class="card-scope">
+                <i class="fas fa-map"></i> {{ faction.势力范围 }}
+              </div>
+              <div v-if="faction.近期动向 !== '无'" class="card-trend">
+                <i class="fas fa-clock"></i> {{ faction.近期动向 }}
+              </div>
             </div>
           </div>
         </div>
@@ -58,8 +65,8 @@
           <i class="fas fa-sitemap"></i>
           <p>暂无派系数据</p>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -86,33 +93,161 @@ function relationClass(relation: string) {
   if (['表面中立', '若即若离', '井水不犯'].includes(relation)) return 'neutral';
   return '';
 }
+
+function relationStyleClass(relation: string) {
+  if (['坚定盟友', '利益同盟'].includes(relation)) return 'ally-border';
+  if (['公开对立', '暗中较劲'].includes(relation)) return 'enemy-border';
+  return '';
+}
 </script>
 
 <style lang="scss" scoped>
 .faction-page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
-  max-width: 900px;
-  margin: 0 auto;
+  height: 100%;
 }
 
-.card {
+// ═══ 紧凑单页布局 ═══
+.faction-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--spacing-md);
+  height: 100%;
+  min-height: 0;
+}
+
+// ═══ 左侧：我方派系卡片 ═══
+.our-faction-card {
+  background: linear-gradient(135deg, rgba(216, 166, 87, 0.08) 0%, var(--color-bg-card) 100%);
+  border: 2px solid var(--color-gold);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at top right, rgba(216, 166, 87, 0.1), transparent);
+    pointer-events: none;
+  }
+}
+
+.faction-badge {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-gold), #e0c36c);
+  border-radius: var(--radius-md);
+  color: var(--color-bg-dark);
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(216, 166, 87, 0.3);
+}
+
+.faction-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin: 0;
+}
+
+.faction-core {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .label {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .core-char {
+    font-size: 14px !important;
+    padding: var(--spacing-xs) var(--spacing-sm) !important;
+  }
+}
+
+.faction-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm);
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .stat-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+
+    &.high { color: var(--color-success); }
+    &.mid { color: var(--color-info); }
+    &.low { color: var(--color-warning); }
+  }
+}
+
+.our-faction-card .faction-trend {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(216, 166, 87, 0.08);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+
+  i {
+    color: var(--color-gold);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+}
+
+// ═══ 右侧：主要派系 ═══
+.major-factions {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
-.card-header {
-  padding: var(--spacing-md) var(--spacing-lg);
+.section-header {
+  padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 
   h2 {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-primary);
 
@@ -122,105 +257,42 @@ function relationClass(relation: string) {
   }
 }
 
-.card-body {
-  padding: var(--spacing-lg);
-}
-
-.our-faction {
-  border-color: var(--color-gold);
-  background: linear-gradient(135deg, rgba(216, 166, 87, 0.05) 0%, var(--color-bg-card) 100%);
-}
-
-.faction-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-gold);
-  margin-bottom: var(--spacing-md);
-}
-
-.faction-info {
+// 派系网格
+.factions-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  .label {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .value {
-    font-size: 14px;
-    color: var(--color-text-secondary);
-
-    &.gold {
-      color: var(--color-gold);
-      font-weight: 600;
-    }
-    &.high {
-      color: var(--color-success);
-    }
-    &.mid {
-      color: var(--color-info);
-    }
-    &.low {
-      color: var(--color-warning);
-    }
-  }
-}
-
-.faction-trend {
-  display: flex;
-  align-items: flex-start;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.faction-card {
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-elevated);
   border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--color-text-secondary);
+  border-left: 3px solid var(--color-border);
 
-  i {
-    color: var(--color-gold);
-    margin-top: 2px;
-  }
+  &.ally-border { border-left-color: var(--color-success); }
+  &.enemy-border { border-left-color: var(--color-danger); }
 }
 
-.faction-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.faction-item {
-  padding: var(--spacing-md);
-  background: var(--color-bg-elevated);
-  border-radius: var(--radius-md);
-}
-
-.faction-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
 }
 
-.faction-title {
-  font-size: 15px;
+.card-title {
+  font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .relation-tag {
-  padding: 3px 10px;
-  font-size: 11px;
+  padding: 2px 8px;
+  font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-full);
   background: var(--color-bg-card);
@@ -240,37 +312,46 @@ function relationClass(relation: string) {
   }
 }
 
-.faction-meta {
+.card-body {
   display: flex;
-  gap: var(--spacing-lg);
-  font-size: 13px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-leader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 12px;
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
 
   i {
     color: var(--color-text-muted);
-    margin-right: 4px;
+    font-size: 11px;
   }
 
-  .high {
-    color: var(--color-success);
-  }
-  .mid {
-    color: var(--color-info);
-  }
-  .low {
-    color: var(--color-warning);
+  .strength {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+
+    &.high { color: var(--color-success); }
+    &.mid { color: var(--color-info); }
+    &.low { color: var(--color-warning); }
   }
 }
 
-.faction-scope,
-.faction-item .faction-trend {
-  font-size: 12px;
+.card-scope,
+.card-trend {
+  font-size: 11px;
   color: var(--color-text-muted);
-  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 
   i {
-    margin-right: 6px;
+    margin-top: 2px;
+    font-size: 10px;
   }
 }
 
@@ -278,13 +359,19 @@ function relationClass(relation: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-md);
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
+  flex: 1;
 
   i {
-    font-size: 48px;
+    font-size: 36px;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 13px;
   }
 }
 </style>
-

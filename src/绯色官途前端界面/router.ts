@@ -4,16 +4,16 @@ import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router';
 const Dashboard = () => import('./views/Dashboard.vue');
 const Profile = () => import('./views/Profile.vue');
 const Characters = () => import('./views/Characters.vue');
-const Relations = () => import('./views/Relations.vue');
 const Romance = () => import('./views/Romance.vue');
 const Faction = () => import('./views/Faction.vue');
-const Assets = () => import('./views/Assets.vue');
-const Secrets = () => import('./views/Secrets.vue');
+const AssetsSecrets = () => import('./views/AssetsSecrets.vue');
 const Opportunities = () => import('./views/Opportunities.vue');
 const Variables = () => import('./views/Variables.vue');
 
 // 路由配置 - 按逻辑分类与信息量密度排序
 // 注：scene 路由已移除，其内容将合并到 Dashboard
+// 注：relations 路由已移除，其内容将合并到 Characters（任务 3.3）
+// 注：assets 和 secrets 路由已合并为 assets-secrets（任务 3.1/3.6）
 // 注：variables 移至末尾（高级用户功能）
 export const routes: RouteRecordRaw[] = [
   {
@@ -35,12 +35,6 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '人物库', icon: 'fa-users', theme: 'characters' },
   },
   {
-    path: '/relations',
-    name: 'relations',
-    component: Relations,
-    meta: { title: '关系网', icon: 'fa-diagram-project', theme: 'relations' },
-  },
-  {
     path: '/romance',
     name: 'romance',
     component: Romance,
@@ -53,16 +47,10 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '派系图谱', icon: 'fa-sitemap', theme: 'faction' },
   },
   {
-    path: '/assets',
-    name: 'assets',
-    component: Assets,
-    meta: { title: '个人资产', icon: 'fa-coins', theme: 'assets' },
-  },
-  {
-    path: '/secrets',
-    name: 'secrets',
-    component: Secrets,
-    meta: { title: '暗账', icon: 'fa-user-secret', theme: 'secrets' },
+    path: '/assets-secrets',
+    name: 'assets-secrets',
+    component: AssetsSecrets,
+    meta: { title: '资产暗账', icon: 'fa-vault', theme: 'assets' },
   },
   {
     path: '/opportunities',
