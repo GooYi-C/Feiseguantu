@@ -248,7 +248,7 @@ function handleCreated(name: string) {
 }
 
 function handleDeleted(name: string) {
-  selectedChar.value = null;
+    selectedChar.value = null;
 }
 
 function handleUpdated(name: string) {

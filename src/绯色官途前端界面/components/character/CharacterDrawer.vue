@@ -15,12 +15,7 @@
                 <div class="avatar-upload-overlay">
                   <i class="fas fa-camera"></i>
                 </div>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  hidden 
-                  @change="handleAvatarUpload"
-                />
+                <input type="file" accept="image/*" hidden @change="handleAvatarUpload" />
               </label>
               <div class="header-info">
                 <h3 class="char-name">{{ characterName }}</h3>
@@ -48,7 +43,12 @@
                   </div>
                   <div class="info-item">
                     <span class="label">年龄</span>
-                    <span class="value">{{ character.年龄 > 0 ? character.年龄 + '岁' : '未知' }}</span>
+                    <span class="value age-value">
+                      {{ character.年龄 > 0 ? character.年龄 + '岁' : '未知' }}
+                      <span v-if="ageWarningText" class="age-warning" :class="ageWarningClass">
+                        {{ ageWarningText }}
+                      </span>
+                    </span>
                   </div>
                   <div class="info-item">
                     <span class="label">体系</span>
@@ -84,21 +84,33 @@
                   <div class="stat-row">
                     <span class="stat-label">好感度</span>
                     <div class="stat-bar">
-                      <div class="fill" :style="{ width: character.好感度 + '%' }" :class="statColor(character.好感度)"></div>
+                      <div
+                        class="fill"
+                        :style="{ width: character.好感度 + '%' }"
+                        :class="statColor(character.好感度)"
+                      ></div>
                     </div>
                     <span class="stat-value" :class="statColor(character.好感度)">{{ character.好感度 }}</span>
                   </div>
                   <div class="stat-row">
                     <span class="stat-label">信任度</span>
                     <div class="stat-bar">
-                      <div class="fill" :style="{ width: character.信任度 + '%' }" :class="statColor(character.信任度)"></div>
+                      <div
+                        class="fill"
+                        :style="{ width: character.信任度 + '%' }"
+                        :class="statColor(character.信任度)"
+                      ></div>
                     </div>
                     <span class="stat-value" :class="statColor(character.信任度)">{{ character.信任度 }}</span>
                   </div>
                   <div v-if="character.忠诚度 > 0" class="stat-row">
                     <span class="stat-label">忠诚度</span>
                     <div class="stat-bar">
-                      <div class="fill" :style="{ width: character.忠诚度 + '%' }" :class="statColor(character.忠诚度)"></div>
+                      <div
+                        class="fill"
+                        :style="{ width: character.忠诚度 + '%' }"
+                        :class="statColor(character.忠诚度)"
+                      ></div>
                     </div>
                     <span class="stat-value" :class="statColor(character.忠诚度)">{{ character.忠诚度 }}</span>
                   </div>
@@ -118,7 +130,9 @@
                   <template v-for="(value, key) in character.官场关系" :key="key">
                     <div v-if="value && value !== '无'" class="relation-item">
                       <span class="label">{{ key }}</span>
-                      <span class="value" :class="{ danger: key === '威胁等级' && isDangerLevel(value) }">{{ value }}</span>
+                      <span class="value" :class="{ danger: key === '威胁等级' && isDangerLevel(value) }">{{
+                        value
+                      }}</span>
                     </div>
                   </template>
                 </div>
@@ -193,26 +207,16 @@
 
               <!-- 操作按钮 -->
               <div class="drawer-actions">
-                <button class="btn-edit" @click="startEdit">
-                  <i class="fas fa-edit"></i> 编辑
-                </button>
-                <button class="btn-delete" @click="handleDelete">
-                  <i class="fas fa-trash"></i> 删除
-                </button>
+                <button class="btn-edit" @click="startEdit"><i class="fas fa-edit"></i> 编辑</button>
+                <button class="btn-delete" @click="handleDelete"><i class="fas fa-trash"></i> 删除</button>
               </div>
             </div>
 
             <!-- 内容区 - 编辑模式 -->
             <div v-else class="drawer-body editing">
-              <CharacterForm
-                ref="formRef"
-                v-model="editData"
-                mode="edit"
-              />
+              <CharacterForm ref="formRef" v-model="editData" mode="edit" />
               <div class="edit-actions">
-                <button class="btn-cancel" @click="cancelEdit">
-                  <i class="fas fa-times"></i> 取消
-                </button>
+                <button class="btn-cancel" @click="cancelEdit"><i class="fas fa-times"></i> 取消</button>
                 <button class="btn-save" :disabled="isSaving" @click="saveEdit">
                   <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
                   <i v-else class="fas fa-save"></i>
@@ -238,12 +242,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { Modal, ConfirmDialog } from '../common';
-import CharacterForm from './CharacterForm.vue';
-import { useCharacters, useLocalCache, useGameData } from '../../stores';
-import type { 人物 } from '../../stores/schema';
 import { klona } from 'klona';
+import { computed, ref, watch } from 'vue';
+import { useCharacters, useGameData, useLocalCache } from '../../stores';
+import type { 人物 } from '../../stores/schema';
+import { ConfirmDialog } from '../common';
+import CharacterForm from './CharacterForm.vue';
 
 // ═══ Props & Emits ═══
 const props = defineProps<{
@@ -271,6 +275,7 @@ const isOpen = computed({
 const isEditing = ref(false);
 const isSaving = ref(false);
 const editData = ref<Partial<人物>>({});
+const originalEditData = ref<string>(''); // 用于比较是否有变化
 const formRef = ref<InstanceType<typeof CharacterForm> | null>(null);
 const showDeleteConfirm = ref(false);
 
@@ -293,6 +298,79 @@ const genderIcon = computed(() => {
 });
 
 const displayTags = computed(() => character.value?.角色标签?.slice(0, 5) || []);
+
+// ═══ 年龄红线提示 ═══
+function getAgeLimit(level: string): { targetAge: number; nextLevel: string } | null {
+  const levelMap: Record<string, { targetAge: number; nextLevel: string }> = {
+    副科级: { targetAge: 30, nextLevel: '正科级' },
+    副科: { targetAge: 30, nextLevel: '正科' },
+    正科级: { targetAge: 35, nextLevel: '副处级' },
+    正科: { targetAge: 35, nextLevel: '副处' },
+    副处级: { targetAge: 35, nextLevel: '正处级' },
+    副处: { targetAge: 35, nextLevel: '正处' },
+    正处级: { targetAge: 45, nextLevel: '副厅级' },
+    正处: { targetAge: 45, nextLevel: '副厅' },
+    副厅级: { targetAge: 45, nextLevel: '正厅级' },
+    副厅: { targetAge: 45, nextLevel: '正厅' },
+    正厅级: { targetAge: 55, nextLevel: '副部级' },
+    正厅: { targetAge: 55, nextLevel: '副部' },
+    副部级: { targetAge: 55, nextLevel: '正部级' },
+    副部: { targetAge: 55, nextLevel: '正部' },
+    正部级: { targetAge: 65, nextLevel: '国家级' },
+    正部: { targetAge: 65, nextLevel: '国家级' },
+    国家级: { targetAge: 67, nextLevel: '政治局常委' },
+    政治局常委: { targetAge: 67, nextLevel: '' },
+  };
+  return levelMap[level] || null;
+}
+
+const ageWarningClass = computed(() => {
+  const age = character.value?.年龄 || 0;
+  const level = character.value?.级别 || '无';
+  const limit = getAgeLimit(level);
+
+  if (!limit) {
+    if (age >= 60) return 'danger';
+    if (age >= 55) return 'warning';
+    return '';
+  }
+
+  const diff = limit.targetAge - age;
+  if (diff <= 0) return 'danger';
+  if (diff <= 3) return 'warning';
+  if (diff <= 5) return 'caution';
+  return 'good';
+});
+
+const ageWarningText = computed(() => {
+  const age = character.value?.年龄 || 0;
+  const level = character.value?.级别 || '无';
+  const limit = getAgeLimit(level);
+
+  if (!limit) {
+    if (age >= 68) return '七上八下，回家养老';
+    if (age >= 60) return '已过退休线';
+    if (age >= 55) return '临近退休';
+    return '';
+  }
+
+  const diff = limit.targetAge - age;
+
+  if (level.includes('政治局') || level.includes('国家级')) {
+    if (age >= 68) return '八下铁律，体面退场';
+    if (age >= 67) return '七上八下，最后一搏';
+    if (age >= 65) return '夕阳余晖，善始善终';
+    return '';
+  }
+
+  if (diff <= -10) return '莫求升迁，另谋出路';
+  if (diff <= -5) return '前路艰难，心态放平';
+  if (diff <= 0) return `已超${limit.nextLevel}红线${-diff}年`;
+  if (diff <= 2) return `距${limit.nextLevel}红线仅${diff}年！`;
+  if (diff <= 5) return `离${limit.nextLevel}红线还有${diff}年`;
+  if (diff <= 10) return `${limit.nextLevel}晋升窗口期`;
+  return '年龄优势明显';
+});
 
 // 关系判断
 const hasOfficialRelation = computed(() => {
@@ -321,8 +399,16 @@ const hasFamilyRelation = computed(() => {
 });
 
 // ═══ 方法 ═══
+function hasUnsavedChanges(): boolean {
+  if (!isEditing.value || !originalEditData.value) return false;
+  // 使用 editData（通过 v-model 同步）与原始数据比较
+  // 需要用 klona 去除 proxy 层以确保序列化一致
+  const currentJson = JSON.stringify(klona(editData.value));
+  return currentJson !== originalEditData.value;
+}
+
 function close() {
-  if (isEditing.value) {
+  if (isEditing.value && hasUnsavedChanges()) {
     if (!confirm('有未保存的更改，确定要关闭吗？')) {
       return;
     }
@@ -350,13 +436,17 @@ function isDangerLevel(level: unknown) {
 }
 
 function isLongField(key: string) {
-  return ['已知弱点', '利用价值', '可托付事项', '近期动向', '提携内容', '预期回报', '知悉内情', '政治资源'].includes(key as string);
+  return ['已知弱点', '利用价值', '可托付事项', '近期动向', '提携内容', '预期回报', '知悉内情', '政治资源'].includes(
+    key as string,
+  );
 }
 
 // ═══ 编辑功能 ═══
 function startEdit() {
   if (character.value) {
-    editData.value = klona(character.value);
+    const data = klona(character.value);
+    editData.value = data;
+    originalEditData.value = JSON.stringify(data); // 保存原始数据用于比较
     isEditing.value = true;
   }
 }
@@ -364,6 +454,7 @@ function startEdit() {
 function cancelEdit() {
   isEditing.value = false;
   editData.value = {};
+  originalEditData.value = '';
 }
 
 async function saveEdit() {
@@ -409,7 +500,7 @@ function handleAvatarUpload(e: Event) {
     toastr.success('头像已更新');
   };
   reader.readAsDataURL(file);
-  
+
   // 清空 input 以便重复选择同一文件
   input.value = '';
 }
@@ -439,6 +530,7 @@ watch(isOpen, val => {
   if (!val) {
     isEditing.value = false;
     editData.value = {};
+    originalEditData.value = '';
   }
 });
 </script>
@@ -701,6 +793,38 @@ watch(isOpen, val => {
     &.danger {
       color: var(--color-danger);
     }
+
+    // 年龄值显示
+    &.age-value {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+  }
+
+  // 年龄红线提示
+  .age-warning {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+
+    &.danger {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--color-danger);
+    }
+    &.warning {
+      background: rgba(224, 195, 108, 0.15);
+      color: var(--color-warning);
+    }
+    &.caution {
+      background: rgba(216, 166, 87, 0.15);
+      color: var(--color-gold);
+    }
+    &.good {
+      background: rgba(74, 193, 142, 0.15);
+      color: var(--color-success);
+    }
   }
 }
 
@@ -912,4 +1036,3 @@ watch(isOpen, val => {
   }
 }
 </style>
-

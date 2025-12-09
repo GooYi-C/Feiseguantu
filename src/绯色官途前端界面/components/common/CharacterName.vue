@@ -1,6 +1,7 @@
 <template>
   <span
     ref="nameRef"
+    v-bind="$attrs"
     class="character-name"
     :class="{
       exists: exists,
@@ -81,6 +82,11 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 import { useCharacters, useCharacterDrawer } from '../../stores';
+
+// 禁用自动继承 attrs，因为组件有多个根节点（span + Teleport）
+defineOptions({
+  inheritAttrs: false,
+});
 
 // ═══ Props ═══
 const props = withDefaults(

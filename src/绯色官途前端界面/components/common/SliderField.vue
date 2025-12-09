@@ -74,7 +74,7 @@ const props = withDefaults(
     step: 1,
     disabled: false,
     showInput: true,
-    showValue: true,
+    showValue: false, // 默认不显示标签上的数值，因为右侧有 number-input
     showTicks: false,
     tickInterval: 25,
     colorMode: 'graded',

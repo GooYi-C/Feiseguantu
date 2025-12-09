@@ -98,6 +98,7 @@ const isSubmitting = ref(false);
 const formRef = ref<InstanceType<typeof CharacterForm> | null>(null);
 
 // ═══ 模板配置 ═══
+// 模板需要预填充对应关系字段，使得关系 optional 字段不为空，从而能被正确关系筛选
 const templates = [
   {
     id: 'blank',
@@ -108,15 +109,18 @@ const templates = [
   },
   {
     id: 'official',
-    name: '官员',
-    description: '党政机关干部',
+    name: '官场关系',
+    description: '官场中的人脉',
     icon: 'fas fa-landmark',
     data: {
       体系: '党政',
-      级别: '正科级',
       好感度: 50,
       信任度: 50,
       角色标签: [],
+      官场关系: {
+        关系类型: '待填写',
+        立场倾向: '待填写',
+      },
     },
   },
   {
@@ -130,23 +134,9 @@ const templates = [
       信任度: 40,
       角色标签: ['绯色对象'],
       绯色关系: {
-        关系阶段: '初识',
+        关系阶段: '待填写',
+        关系性质: '待填写',
         危险度: 30,
-      },
-    },
-  },
-  {
-    id: 'backer',
-    name: '靠山',
-    description: '提携自己的上级',
-    icon: 'fas fa-shield-halved',
-    data: {
-      体系: '党政',
-      好感度: 70,
-      信任度: 60,
-      角色标签: ['靠山'],
-      靠山关系: {
-        紧密度: '一般',
       },
     },
   },
@@ -161,23 +151,39 @@ const templates = [
       信任度: 20,
       角色标签: ['竞争对手'],
       竞争关系: {
-        竞争目标: '无',
-        竞争态势: '胶着',
+        竞争目标: '待填写',
+        竞争态势: '待填写',
+      },
+    },
+  },
+  {
+    id: 'backer',
+    name: '靠山',
+    description: '提携自己的上级',
+    icon: 'fas fa-shield-halved',
+    data: {
+      体系: '党政',
+      好感度: 70,
+      信任度: 60,
+      角色标签: ['靠山'],
+      靠山关系: {
+        紧密度: '待填写',
+        提携内容: '待填写',
       },
     },
   },
   {
     id: 'family',
-    name: '家属',
-    description: '家庭成员',
+    name: '家庭成员',
+    description: '家属亲戚',
     icon: 'fas fa-house-user',
     data: {
       好感度: 80,
       信任度: 70,
       角色标签: ['家属'],
       家庭关系: {
-        关系: '无',
-        态度: '支持',
+        关系: '待填写',
+        态度: '待填写',
       },
     },
   },

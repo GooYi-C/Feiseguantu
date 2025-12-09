@@ -6,35 +6,20 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.basic }"></i>
         <h4><i class="fas fa-id-card"></i> 基础信息</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.basic">
+      <div v-show="expandedSections.basic" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>姓名 <span class="required">*</span></label>
-            <input
-              type="text"
-              v-model="formData.姓名"
-              :disabled="mode === 'edit'"
-              placeholder="人物姓名"
-            />
+            <input v-model="formData.姓名" type="text" :disabled="mode === 'edit'" placeholder="人物姓名" />
           </div>
           <div class="field-row">
             <label>性别</label>
-            <EnumSelect
-              v-model="formData.性别"
-              :options="['无', '男', '女']"
-              placeholder="选择性别"
-            />
+            <EnumSelect v-model="formData.性别" :options="['无', '男', '女']" placeholder="选择性别" />
           </div>
           <div class="field-row">
             <label>年龄</label>
             <div class="age-input-wrapper">
-              <input
-                type="number"
-                v-model.number="formData.年龄"
-                min="0"
-                max="120"
-                placeholder="年龄"
-              />
+              <input v-model.number="formData.年龄" type="number" min="0" max="120" placeholder="年龄" />
               <span v-if="formData.年龄 > 0" class="age-warning" :class="ageWarningClass">
                 {{ ageWarningText }}
               </span>
@@ -50,23 +35,23 @@
           </div>
           <div class="field-row">
             <label>级别</label>
-            <input type="text" v-model="formData.级别" placeholder="如：正处级" />
+            <input v-model="formData.级别" type="text" placeholder="如：正处级" />
           </div>
           <div class="field-row">
             <label>职务</label>
-            <input type="text" v-model="formData.职务" placeholder="如：区长" />
+            <input v-model="formData.职务" type="text" placeholder="如：区长" />
           </div>
           <div class="field-row">
             <label>单位</label>
-            <input type="text" v-model="formData.单位" placeholder="任职单位" />
+            <input v-model="formData.单位" type="text" placeholder="任职单位" />
           </div>
           <div class="field-row">
             <label>派系</label>
-            <input type="text" v-model="formData.派系" placeholder="所属派系" />
+            <input v-model="formData.派系" type="text" placeholder="所属派系" />
           </div>
           <div class="field-row">
             <label>状态</label>
-            <input type="text" v-model="formData.状态" placeholder="如：在职、退休" />
+            <input v-model="formData.状态" type="text" placeholder="如：在职、退休" />
           </div>
           <div class="field-row">
             <label>婚姻状态</label>
@@ -90,29 +75,11 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.stats }"></i>
         <h4><i class="fas fa-chart-bar"></i> 数值面板</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.stats">
+      <div v-show="expandedSections.stats" class="section-body">
         <div class="stats-panel">
-          <SliderField
-            v-model="formData.好感度"
-            label="好感度"
-            :min="0"
-            :max="100"
-            color-mode="graded"
-          />
-          <SliderField
-            v-model="formData.信任度"
-            label="信任度"
-            :min="0"
-            :max="100"
-            color-mode="graded"
-          />
-          <SliderField
-            v-model="formData.忠诚度"
-            label="忠诚度"
-            :min="0"
-            :max="100"
-            color-mode="graded"
-          />
+          <SliderField v-model="formData.好感度" label="好感度" :min="0" :max="100" color-mode="graded" />
+          <SliderField v-model="formData.信任度" label="信任度" :min="0" :max="100" color-mode="graded" />
+          <SliderField v-model="formData.忠诚度" label="忠诚度" :min="0" :max="100" color-mode="graded" />
         </div>
       </div>
     </section>
@@ -123,12 +90,8 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.tags }"></i>
         <h4><i class="fas fa-tags"></i> 角色标签</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.tags">
-        <ArrayEditor
-          v-model="formData.角色标签"
-          :suggestions="tagSuggestions"
-          placeholder="输入标签后按 Enter 添加"
-        />
+      <div v-show="expandedSections.tags" class="section-body">
+        <ArrayEditor v-model="formData.角色标签" :suggestions="tagSuggestions" placeholder="输入标签后按 Enter 添加" />
       </div>
     </section>
 
@@ -138,31 +101,27 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.official }"></i>
         <h4><i class="fas fa-landmark"></i> 官场关系</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.official">
+      <div v-show="expandedSections.official" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>关系类型</label>
-            <input type="text" v-model="官场关系Data.关系类型" placeholder="如：同僚、上下级" />
+            <input v-model="官场关系Data.关系类型" type="text" placeholder="如：同僚、上下级" />
           </div>
           <div class="field-row">
             <label>关系来源</label>
-            <input type="text" v-model="官场关系Data.关系来源" placeholder="认识渠道" />
+            <input v-model="官场关系Data.关系来源" type="text" placeholder="认识渠道" />
           </div>
           <div class="field-row">
             <label>立场倾向</label>
-            <input type="text" v-model="官场关系Data.立场倾向" placeholder="如：友好、中立、敌对" />
+            <input v-model="官场关系Data.立场倾向" type="text" placeholder="如：友好、中立、敌对" />
           </div>
           <div class="field-row">
             <label>威胁等级</label>
-            <EnumSelect
-              v-model="官场关系Data.威胁等级"
-              :options="['无', '低', '中等', '偏高', '极高', '致命']"
-              placeholder="威胁等级"
-            />
+            <input v-model="官场关系Data.威胁等级" type="text" placeholder="如：低、中等、极高" />
           </div>
           <div class="field-row full">
             <label>敌对原因</label>
-            <input type="text" v-model="官场关系Data.敌对原因" placeholder="产生矛盾的原因" />
+            <input v-model="官场关系Data.敌对原因" type="text" placeholder="产生矛盾的原因" />
           </div>
           <div class="field-row full">
             <label>已知弱点</label>
@@ -190,28 +149,18 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.romance }"></i>
         <h4><i class="fas fa-heart"></i> 绯色关系</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.romance">
+      <div v-show="expandedSections.romance" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>关系阶段</label>
-            <EnumSelect
-              v-model="绯色关系Data.关系阶段"
-              :options="romanceStages"
-              placeholder="关系阶段"
-            />
+            <input v-model="绯色关系Data.关系阶段" type="text" placeholder="如：初识、暧昧、热恋" />
           </div>
           <div class="field-row">
             <label>关系性质</label>
-            <input type="text" v-model="绯色关系Data.关系性质" placeholder="如：暧昧、情人" />
+            <input v-model="绯色关系Data.关系性质" type="text" placeholder="如：暧昧、情人" />
           </div>
           <div class="field-row full">
-            <SliderField
-              v-model="绯色关系Data.危险度"
-              label="危险度"
-              :min="0"
-              :max="100"
-              color-mode="graded"
-            />
+            <SliderField v-model="绯色关系Data.危险度" label="危险度" :min="0" :max="100" color-mode="graded" />
           </div>
           <div class="field-row full">
             <label>外貌</label>
@@ -223,23 +172,23 @@
           </div>
           <div class="field-row">
             <label>情绪状态</label>
-            <input type="text" v-model="绯色关系Data.情绪状态" placeholder="当前情绪" />
+            <input v-model="绯色关系Data.情绪状态" type="text" placeholder="当前情绪" />
           </div>
           <div class="field-row">
             <label>初识场景</label>
-            <input type="text" v-model="绯色关系Data.初识场景" placeholder="初次相识的场景" />
+            <input v-model="绯色关系Data.初识场景" type="text" placeholder="初次相识的场景" />
           </div>
           <div class="field-row">
             <label>通联方式</label>
-            <input type="text" v-model="绯色关系Data.通联方式" placeholder="联系方式" />
+            <input v-model="绯色关系Data.通联方式" type="text" placeholder="联系方式" />
           </div>
           <div class="field-row">
             <label>通联详情</label>
-            <input type="text" v-model="绯色关系Data.通联详情" placeholder="联系详情" />
+            <input v-model="绯色关系Data.通联详情" type="text" placeholder="联系详情" />
           </div>
           <div class="field-row full">
             <label>经济往来</label>
-            <input type="text" v-model="绯色关系Data.经济往来" placeholder="经济方面的往来" />
+            <input v-model="绯色关系Data.经济往来" type="text" placeholder="经济方面的往来" />
           </div>
           <div class="field-row full">
             <label>利益纠葛</label>
@@ -263,15 +212,15 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.rival }"></i>
         <h4><i class="fas fa-chess"></i> 竞争关系</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.rival">
+      <div v-show="expandedSections.rival" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>竞争目标</label>
-            <input type="text" v-model="竞争关系Data.竞争目标" placeholder="竞争的目标" />
+            <input v-model="竞争关系Data.竞争目标" type="text" placeholder="竞争的目标" />
           </div>
           <div class="field-row">
             <label>竞争态势</label>
-            <input type="text" v-model="竞争关系Data.竞争态势" placeholder="当前态势" />
+            <input v-model="竞争关系Data.竞争态势" type="text" placeholder="当前态势" />
           </div>
           <div class="field-row full">
             <label>竞争理由</label>
@@ -287,7 +236,7 @@
           </div>
           <div class="field-row full">
             <label>背后靠山</label>
-            <input type="text" v-model="竞争关系Data.背后靠山" placeholder="对方的靠山" />
+            <input v-model="竞争关系Data.背后靠山" type="text" placeholder="对方的靠山" />
           </div>
         </div>
       </div>
@@ -299,15 +248,11 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.backer }"></i>
         <h4><i class="fas fa-shield-halved"></i> 靠山关系</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.backer">
+      <div v-show="expandedSections.backer" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>紧密度</label>
-            <EnumSelect
-              v-model="靠山关系Data.紧密度"
-              :options="['无', '疏远', '一般', '紧密', '核心']"
-              placeholder="紧密程度"
-            />
+            <input v-model="靠山关系Data.紧密度" type="text" placeholder="如：疏远、一般、紧密、核心" />
           </div>
           <div class="field-row full">
             <label>提携内容</label>
@@ -327,27 +272,19 @@
         <i class="fas fa-chevron-right expand-icon" :class="{ expanded: expandedSections.family }"></i>
         <h4><i class="fas fa-house-user"></i> 家庭关系</h4>
       </div>
-      <div class="section-body" v-show="expandedSections.family">
+      <div v-show="expandedSections.family" class="section-body">
         <div class="field-grid">
           <div class="field-row">
             <label>关系</label>
-            <EnumSelect
-              v-model="家庭关系Data.关系"
-              :options="['无', '配偶', '父母', '子女', '兄弟姐妹', '其他亲属']"
-              placeholder="家庭关系"
-            />
+            <input v-model="家庭关系Data.关系" type="text" placeholder="如：配偶、父母、奶奶、叔叔" />
           </div>
           <div class="field-row">
             <label>态度</label>
-            <input type="text" v-model="家庭关系Data.态度" placeholder="对我的态度" />
+            <input v-model="家庭关系Data.态度" type="text" placeholder="对我的态度" />
           </div>
           <div class="field-row">
             <label>风险等级</label>
-            <EnumSelect
-              v-model="家庭关系Data.风险等级"
-              :options="['无', '低', '中等', '高']"
-              placeholder="风险等级"
-            />
+            <input v-model="家庭关系Data.风险等级" type="text" placeholder="如：低、中等、高" />
           </div>
           <div class="field-row full">
             <label>知悉内情</label>
@@ -364,9 +301,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
-import { SliderField, ArrayEditor, EnumSelect } from '../common';
+import { computed, reactive, watch } from 'vue';
 import type { 人物 } from '../../stores/schema';
+import { ArrayEditor, EnumSelect, SliderField } from '../common';
 
 // ═══ Props & Emits ═══
 const props = withDefaults(
@@ -486,35 +423,91 @@ const tagSuggestions = [
   '下属',
 ];
 
-// ═══ 绯色关系阶段选项 ═══
-const romanceStages = [
-  '无',
-  '陌生人',
-  '初识',
-  '暧昧',
-  '追求中',
-  '热恋',
-  '稳定',
-  '冷淡',
-  '分手',
-  '彻底终结',
-];
+// ═══ 年龄红线提示 - 根据级别与年龄动态计算 ═══
+// 年龄红线标准：
+// 副科30岁前 | 正科35岁前
+// 副处35岁前 | 正处45岁前
+// 副厅45岁前 | 正厅55岁前
+// 副部55岁前 | 正部65岁前
+// 政治局常委67岁可留，68岁必退
 
-// ═══ 年龄红线提示 ═══
+function getAgeLimit(level: string): { targetAge: number; nextLevel: string } | null {
+  const levelMap: Record<string, { targetAge: number; nextLevel: string }> = {
+    // 科级
+    副科级: { targetAge: 30, nextLevel: '正科级' },
+    副科: { targetAge: 30, nextLevel: '正科' },
+    正科级: { targetAge: 35, nextLevel: '副处级' },
+    正科: { targetAge: 35, nextLevel: '副处' },
+    // 处级
+    副处级: { targetAge: 35, nextLevel: '正处级' },
+    副处: { targetAge: 35, nextLevel: '正处' },
+    正处级: { targetAge: 45, nextLevel: '副厅级' },
+    正处: { targetAge: 45, nextLevel: '副厅' },
+    // 厅级
+    副厅级: { targetAge: 45, nextLevel: '正厅级' },
+    副厅: { targetAge: 45, nextLevel: '正厅' },
+    正厅级: { targetAge: 55, nextLevel: '副部级' },
+    正厅: { targetAge: 55, nextLevel: '副部' },
+    // 部级
+    副部级: { targetAge: 55, nextLevel: '正部级' },
+    副部: { targetAge: 55, nextLevel: '正部' },
+    正部级: { targetAge: 65, nextLevel: '国家级' },
+    正部: { targetAge: 65, nextLevel: '国家级' },
+    // 国家级
+    国家级: { targetAge: 67, nextLevel: '政治局常委' },
+    政治局常委: { targetAge: 67, nextLevel: '' },
+  };
+  return levelMap[level] || null;
+}
+
 const ageWarningClass = computed(() => {
   const age = formData.年龄 || 0;
-  if (age >= 60) return 'danger';
-  if (age >= 55) return 'warning';
-  if (age >= 50) return 'caution';
-  return '';
+  const level = formData.级别 || '无';
+  const limit = getAgeLimit(level);
+
+  if (!limit) {
+    // 无法识别级别，使用通用逻辑
+    if (age >= 60) return 'danger';
+    if (age >= 55) return 'warning';
+    return '';
+  }
+
+  const diff = limit.targetAge - age;
+  if (diff <= 0) return 'danger'; // 已超龄
+  if (diff <= 3) return 'warning'; // 即将超龄
+  if (diff <= 5) return 'caution'; // 临近红线
+  return 'good'; // 年龄优势
 });
 
 const ageWarningText = computed(() => {
   const age = formData.年龄 || 0;
-  if (age >= 60) return '已过退休年龄';
-  if (age >= 55) return '临近退休';
-  if (age >= 50) return '职务晋升关键期';
-  return '';
+  const level = formData.级别 || '无';
+  const limit = getAgeLimit(level);
+
+  if (!limit) {
+    // 无法识别级别，使用通用逻辑
+    if (age >= 68) return '七上八下，回家养老';
+    if (age >= 60) return '已过退休线';
+    if (age >= 55) return '临近退休';
+    return '';
+  }
+
+  const diff = limit.targetAge - age;
+
+  if (level.includes('政治局') || level.includes('国家级')) {
+    if (age >= 68) return '八下铁律，体面退场';
+    if (age >= 67) return '七上八下，最后一搏';
+    if (age >= 65) return '夕阳余晖，善始善终';
+    return '';
+  }
+
+  if (diff <= -10) return '莫求升迁，另谋出路';
+  if (diff <= -5) return '前路艰难，心态放平';
+  if (diff <= 0) return `已超${limit.nextLevel}红线${-diff}年`;
+  if (diff <= 2) return `距${limit.nextLevel}红线仅${diff}年！`;
+  if (diff <= 5) return `离${limit.nextLevel}红线还有${diff}年`;
+  if (diff <= 10) return `${limit.nextLevel}晋升窗口期`;
+  return `年龄优势明显`;
 });
 
 // ═══ 组装完整数据 ═══
@@ -774,10 +767,16 @@ defineExpose({ getData, validate, reset });
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     white-space: nowrap;
+    font-weight: 600;
+
+    &.good {
+      background: rgba(74, 193, 142, 0.15);
+      color: var(--color-success);
+    }
 
     &.caution {
-      background: rgba(224, 195, 108, 0.15);
-      color: var(--color-warning);
+      background: rgba(216, 166, 87, 0.15);
+      color: var(--color-gold);
     }
 
     &.warning {
@@ -799,4 +798,3 @@ defineExpose({ getData, validate, reset });
   gap: var(--spacing-lg);
 }
 </style>
-
