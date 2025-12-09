@@ -54,7 +54,7 @@
           </span>
           <div v-if="当前场景.在场人物.length" class="present-chars">
             <i class="fas fa-users"></i>
-            <span v-for="char in 当前场景.在场人物" :key="char" class="char-tag">{{ char }}</span>
+            <CharacterName v-for="char in 当前场景.在场人物" :key="char" :name="char" class="char-tag" />
           </div>
         </div>
         <div v-if="当前场景.潜在议题 !== '无'" class="topic">
@@ -113,7 +113,7 @@
                 <i class="far fa-clock"></i> {{ todo.截止时间 }}
               </span>
               <span v-if="todo.关联人物.length" class="related">
-                <i class="fas fa-user"></i> {{ todo.关联人物.join(', ') }}
+                <CharacterName v-for="char in todo.关联人物" :key="char" :name="char" />
               </span>
             </div>
           </li>
@@ -130,39 +130,45 @@
       <div class="card-body">
         <div class="relation-grid">
           <div v-if="关系索引.一把手 !== '无'" class="relation-item">
-            <span class="rel-label">一把手</span>
-            <span class="rel-value gold">{{ 关系索引.一把手 }}</span>
+            <span class="rel-label label-gold"><i class="fas fa-crown"></i> 一把手</span>
+            <div class="rel-tags">
+              <CharacterName :name="关系索引.一把手" />
+            </div>
           </div>
           <div v-if="关系索引.直接上级 !== '无'" class="relation-item">
-            <span class="rel-label">直接上级</span>
-            <span class="rel-value">{{ 关系索引.直接上级 }}</span>
+            <span class="rel-label label-superior"><i class="fas fa-user-tie"></i> 直接上级</span>
+            <div class="rel-tags">
+              <CharacterName :name="关系索引.直接上级" />
+            </div>
           </div>
           <div v-if="关系索引.配偶 !== '无'" class="relation-item">
-            <span class="rel-label">配偶</span>
-            <span class="rel-value">{{ 关系索引.配偶 }}</span>
+            <span class="rel-label label-family"><i class="fas fa-ring"></i> 配偶</span>
+            <div class="rel-tags">
+              <CharacterName :name="关系索引.配偶" />
+            </div>
           </div>
           <div v-if="关系索引.靠山列表.length" class="relation-item">
-            <span class="rel-label">靠山</span>
+            <span class="rel-label label-gold"><i class="fas fa-shield-halved"></i> 靠山</span>
             <div class="rel-tags">
-              <span v-for="p in 关系索引.靠山列表" :key="p" class="rel-tag gold">{{ p }}</span>
+              <CharacterName v-for="p in 关系索引.靠山列表" :key="p" :name="p" />
             </div>
           </div>
           <div v-if="关系索引.绯色对象列表.length" class="relation-item">
-            <span class="rel-label">绯色对象</span>
+            <span class="rel-label label-romance"><i class="fas fa-heart"></i> 绯色对象</span>
             <div class="rel-tags">
-              <span v-for="p in 关系索引.绯色对象列表" :key="p" class="rel-tag romance">{{ p }}</span>
+              <CharacterName v-for="p in 关系索引.绯色对象列表" :key="p" :name="p" />
             </div>
           </div>
           <div v-if="关系索引.竞争对手列表.length" class="relation-item">
-            <span class="rel-label">竞争对手</span>
+            <span class="rel-label label-warning"><i class="fas fa-chess"></i> 竞争对手</span>
             <div class="rel-tags">
-              <span v-for="p in 关系索引.竞争对手列表" :key="p" class="rel-tag warning">{{ p }}</span>
+              <CharacterName v-for="p in 关系索引.竞争对手列表" :key="p" :name="p" />
             </div>
           </div>
           <div v-if="关系索引.政治宿敌列表.length" class="relation-item">
-            <span class="rel-label">政治宿敌</span>
+            <span class="rel-label label-danger"><i class="fas fa-skull"></i> 政治宿敌</span>
             <div class="rel-tags">
-              <span v-for="p in 关系索引.政治宿敌列表" :key="p" class="rel-tag danger">{{ p }}</span>
+              <CharacterName v-for="p in 关系索引.政治宿敌列表" :key="p" :name="p" />
             </div>
           </div>
         </div>
@@ -174,6 +180,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGameData } from '../stores/useGameData';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
 
@@ -536,21 +543,38 @@ function urgencyClass(level: string) {
 .relation-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 
   .rel-label {
-    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
 
-  .rel-value {
-    font-size: 14px;
-    color: var(--color-text-primary);
+    i {
+      font-size: 11px;
+    }
 
-    &.gold {
+    // 不同关系类型的标签颜色
+    &.label-gold {
       color: var(--color-gold);
+    }
+    &.label-superior {
+      color: #9b59b6; // 紫色 - 上级
+    }
+    &.label-family {
+      color: var(--color-info);
+    }
+    &.label-romance {
+      color: var(--color-romance-light);
+    }
+    &.label-warning {
+      color: var(--color-warning);
+    }
+    &.label-danger {
+      color: var(--color-danger);
     }
   }
 }
@@ -583,6 +607,10 @@ function urgencyClass(level: string) {
   &.danger {
     background: rgba(255, 107, 107, 0.15);
     color: var(--color-danger);
+  }
+  &.info {
+    background: rgba(122, 162, 247, 0.15);
+    color: var(--color-info);
   }
 }
 </style>

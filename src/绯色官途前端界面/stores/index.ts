@@ -11,6 +11,9 @@ export { useCharacters } from './useCharacters';
 // 本地缓存 Store
 export { useLocalCache } from './useLocalCache';
 
+// 全局角色抽屉状态
+export { useCharacterDrawer } from './useCharacterDrawer';
+
 // 旧版 Store（保留兼容性，建议使用 useGameData）
 export { useGameStore } from './game';
 

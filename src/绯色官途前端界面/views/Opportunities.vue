@@ -75,14 +75,12 @@
                 <i class="far fa-clock"></i> {{ item.截止时间 }}
               </span>
               <div v-if="item.关联人物.length" class="related-chars">
-                <router-link
+                <CharacterName
                   v-for="char in item.关联人物"
                   :key="char"
-                  :to="{ path: '/characters', query: { char } }"
+                  :name="char"
                   class="char-link"
-                >
-                  {{ char }}
-                </router-link>
+                />
               </div>
             </div>
           </div>
@@ -96,6 +94,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGameData } from '../stores/useGameData';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
 const 机遇与危机 = computed(() => gameData.机遇与危机);

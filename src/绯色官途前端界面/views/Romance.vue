@@ -25,7 +25,7 @@
           <div class="cover-overlay"></div>
           <label class="upload-cover" title="上传封面">
             <i class="fas fa-image"></i>
-            <input type="file" accept="image/*" @change="e => handleCoverUpload(e, char.name)" hidden />
+            <input type="file" accept="image/*" hidden @change="e => handleCoverUpload(e, char.name)" />
           </label>
           <div class="danger-indicator" :class="dangerLevel(char.绯色关系?.危险度 || 0)">
             <i class="fas fa-exclamation-triangle"></i>
@@ -36,10 +36,10 @@
         <!-- 卡片内容 -->
         <div class="card-content">
           <h3 class="char-name">{{ char.name }}</h3>
-          <div class="char-position" v-if="char.职务 !== '无'">{{ char.职务 }}</div>
+          <div v-if="char.职务 !== '无'" class="char-position">{{ char.职务 }}</div>
 
           <!-- 关系阶段进度 -->
-          <div class="stage-progress" v-if="char.绯色关系">
+          <div v-if="char.绯色关系" class="stage-progress">
             <span class="stage-label">{{ char.绯色关系.关系阶段 }}</span>
             <div class="stage-bar">
               <div class="stage-fill" :style="{ width: stageProgress(char.绯色关系.关系阶段) + '%' }"></div>
@@ -47,20 +47,24 @@
           </div>
 
           <!-- 情绪状态 -->
-          <div class="emotion-tag" v-if="char.绯色关系?.情绪状态 !== '无'" :class="emotionClass(char.绯色关系?.情绪状态)">
+          <div
+            v-if="char.绯色关系?.情绪状态 !== '无'"
+            class="emotion-tag"
+            :class="emotionClass(char.绯色关系?.情绪状态)"
+          >
             <i class="fas fa-face-smile-beam"></i>
             {{ char.绯色关系?.情绪状态 }}
           </div>
 
           <!-- 身份标签 -->
-          <div class="identity-tags" v-if="char.绯色关系?.身份标签?.length">
+          <div v-if="char.绯色关系?.身份标签?.length" class="identity-tags">
             <span v-for="tag in char.绯色关系.身份标签.slice(0, 3)" :key="tag" class="id-tag">{{ tag }}</span>
           </div>
 
           <!-- 近期事件 -->
-          <div class="recent-event" v-if="char.绯色关系?.近期事件 !== '无'">
+          <div v-if="char.绯色关系?.近期事件 !== '无'" class="recent-event">
             <i class="fas fa-clock-rotate-left"></i>
-            <span>{{ truncate(char.绯色关系.近期事件, 40) }}</span>
+            <span>{{ truncate(char.绯色关系?.近期事件 || '', 40) }}</span>
           </div>
         </div>
       </div>
@@ -82,7 +86,7 @@
             </div>
             <div class="drawer-title-area">
               <h3>{{ selectedChar }}</h3>
-              <span class="subtitle" v-if="selectedCharacter.职务 !== '无'">{{ selectedCharacter.职务 }}</span>
+              <span v-if="selectedCharacter.职务 !== '无'" class="subtitle">{{ selectedCharacter.职务 }}</span>
             </div>
             <button class="drawer-close" @click="selectedChar = null">
               <i class="fas fa-times"></i>
@@ -116,26 +120,26 @@
             </section>
 
             <!-- 外貌描述 -->
-            <section class="detail-section" v-if="selectedCharacter.绯色关系?.外貌 !== '无'">
+            <section v-if="selectedCharacter.绯色关系?.外貌 !== '无'" class="detail-section">
               <h4><i class="fas fa-eye"></i> 外貌</h4>
               <p class="desc-text">{{ selectedCharacter.绯色关系?.外貌 }}</p>
             </section>
 
             <!-- 性格 -->
-            <section class="detail-section" v-if="selectedCharacter.绯色关系?.性格 !== '无'">
+            <section v-if="selectedCharacter.绯色关系?.性格 !== '无'" class="detail-section">
               <h4><i class="fas fa-masks-theater"></i> 性格</h4>
               <p class="desc-text">{{ selectedCharacter.绯色关系?.性格 }}</p>
             </section>
 
             <!-- 把柄信息 -->
-            <section class="detail-section sensitive" v-if="selectedCharacter.绯色关系?.把柄">
+            <section v-if="selectedCharacter.绯色关系?.把柄" class="detail-section sensitive">
               <h4><i class="fas fa-file-contract"></i> 把柄</h4>
               <div class="grip-info" :class="{ masked: !showSensitive }">
-                <div class="grip-row" v-if="selectedCharacter.绯色关系?.把柄.我方掌握 !== '无'">
+                <div v-if="selectedCharacter.绯色关系?.把柄.我方掌握 !== '无'" class="grip-row">
                   <span class="grip-label">我方掌握</span>
                   <span class="grip-value">{{ selectedCharacter.绯色关系?.把柄.我方掌握 }}</span>
                 </div>
-                <div class="grip-row" v-if="selectedCharacter.绯色关系?.把柄.对方掌握 !== '无'">
+                <div v-if="selectedCharacter.绯色关系?.把柄.对方掌握 !== '无'" class="grip-row">
                   <span class="grip-label">对方掌握</span>
                   <span class="grip-value danger">{{ selectedCharacter.绯色关系?.把柄.对方掌握 }}</span>
                 </div>
@@ -147,18 +151,18 @@
             </section>
 
             <!-- 通联方式 -->
-            <section class="detail-section" v-if="selectedCharacter.绯色关系?.通联方式 !== '无'">
+            <section v-if="selectedCharacter.绯色关系?.通联方式 !== '无'" class="detail-section">
               <h4><i class="fas fa-phone"></i> 通联</h4>
               <div class="contact-info">
                 <span class="contact-type">{{ selectedCharacter.绯色关系?.通联方式 }}</span>
-                <span class="contact-detail" v-if="selectedCharacter.绯色关系?.通联详情 !== '无'">
+                <span v-if="selectedCharacter.绯色关系?.通联详情 !== '无'" class="contact-detail">
                   {{ selectedCharacter.绯色关系?.通联详情 }}
                 </span>
               </div>
             </section>
 
             <!-- 近期事件 -->
-            <section class="detail-section" v-if="selectedCharacter.绯色关系?.近期事件 !== '无'">
+            <section v-if="selectedCharacter.绯色关系?.近期事件 !== '无'" class="detail-section">
               <h4><i class="fas fa-calendar-day"></i> 近期事件</h4>
               <p class="desc-text">{{ selectedCharacter.绯色关系?.近期事件 }}</p>
             </section>
@@ -170,8 +174,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useGameData } from '../stores/useGameData';
+import { computed, ref } from 'vue';
+import { useGameData } from '../stores';
 
 const gameData = useGameData();
 const searchQuery = ref('');
@@ -229,7 +233,17 @@ function dangerLevel(danger: number) {
 }
 
 function stageProgress(stage: string | undefined) {
-  const stages = ['素未谋面', '初步接触', '暧昧试探', '激情突破', '稳定维持', '如胶似漆', '激情消退', '关系决裂', '彻底终结'];
+  const stages = [
+    '素未谋面',
+    '初步接触',
+    '暧昧试探',
+    '激情突破',
+    '稳定维持',
+    '如胶似漆',
+    '激情消退',
+    '关系决裂',
+    '彻底终结',
+  ];
   const idx = stages.indexOf(stage || '');
   return idx >= 0 ? ((idx + 1) / stages.length) * 100 : 0;
 }
@@ -765,4 +779,3 @@ function truncate(text: string, len: number) {
   }
 }
 </style>
-

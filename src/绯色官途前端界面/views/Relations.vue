@@ -91,7 +91,7 @@
     <aside class="side-panel" :class="{ open: !!selectedNode }">
       <template v-if="selectedNode && selectedCharacter">
         <div class="panel-header">
-          <h3>{{ selectedNode }}</h3>
+          <h3><CharacterName :name="selectedNode" :clickable="false" /></h3>
           <button class="close-btn" @click="selectedNode = null">
             <i class="fas fa-times"></i>
           </button>
@@ -117,9 +117,9 @@
             </div>
           </div>
           <div class="panel-actions">
-            <router-link :to="{ path: '/characters', query: { char: selectedNode } }" class="action-link">
+            <button class="action-link" @click="openCharacterDrawer">
               <i class="fas fa-id-card"></i> 查看详情
-            </router-link>
+            </button>
             <router-link
               v-if="selectedCharacter.绯色关系"
               :to="{ path: '/romance', query: { char: selectedNode } }"
@@ -135,10 +135,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useGameData } from '../stores/useGameData';
+import { ref, computed } from 'vue';
+import { useGameData, useCharacterDrawer } from '../stores';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
+const characterDrawer = useCharacterDrawer();
 const graphContainer = ref<HTMLElement | null>(null);
 
 // 视图状态
@@ -307,6 +309,12 @@ const selectedCharacter = computed(() => (selectedNode.value ? 人物库.value[s
 
 function selectNode(name: string) {
   selectedNode.value = selectedNode.value === name ? null : name;
+}
+
+function openCharacterDrawer() {
+  if (selectedNode.value) {
+    characterDrawer.open(selectedNode.value);
+  }
 }
 
 function handleZoom(e: WheelEvent) {

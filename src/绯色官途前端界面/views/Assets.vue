@@ -33,7 +33,7 @@
               <div class="asset-meta">
                 <span>{{ item.面积 }}</span>
                 <span>{{ item.来源 }}</span>
-                <span>登记人: {{ item.登记人 }}</span>
+                <span class="registrant">登记人: <CharacterName :name="item.登记人" /></span>
               </div>
             </div>
           </div>
@@ -72,7 +72,7 @@
           <div v-if="Object.keys(个人资产.白手套).length" class="asset-list">
             <div v-for="(item, key) in 个人资产.白手套" :key="key" class="asset-item">
               <div class="asset-main">
-                <span class="asset-name">{{ key }}</span>
+                <CharacterName :name="key as string" class="asset-name" />
                 <span class="asset-value">{{ formatMoney(item.代持金额) }}</span>
               </div>
               <div class="asset-meta">
@@ -91,6 +91,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGameData } from '../stores/useGameData';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
 const 个人资产 = computed(() => gameData.个人资产);

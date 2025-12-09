@@ -20,7 +20,7 @@
               <i :class="revealedSecrets[`被握把柄.${key}`] ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
             </button>
             <div class="secret-meta">
-              <span>掌握者: {{ item.掌握者 }}</span>
+              <span class="holder">掌握者: <CharacterName :name="item.掌握者" /></span>
               <span :class="fatalClass(item.致命程度)">{{ item.致命程度 }}</span>
             </div>
           </div>
@@ -40,7 +40,7 @@
           <div v-for="(item, key) in 暗账.手握把柄" :key="key" class="secret-item">
             <div class="secret-header">
               <span class="secret-name">{{ key }}</span>
-              <span class="target-tag">目标: {{ item.目标人物 }}</span>
+              <span class="target-tag">目标: <CharacterName :name="item.目标人物" /></span>
             </div>
             <p class="secret-content">{{ item.把柄内容 }}</p>
             <div class="secret-meta">
@@ -95,7 +95,7 @@
             </div>
             <p class="secret-content">{{ item.欠债内容 }}</p>
             <div class="secret-meta">
-              <span>债主: {{ item.债主 }}</span>
+              <span class="creditor">债主: <CharacterName :name="item.债主" /></span>
               <span>性质: {{ item.债务性质 }}</span>
             </div>
           </div>
@@ -109,6 +109,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { useGameData } from '../stores/useGameData';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
 const 暗账 = computed(() => gameData.暗账);

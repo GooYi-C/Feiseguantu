@@ -96,6 +96,12 @@
         </div>
       </div>
     </Transition>
+
+    <!-- 全局角色抽屉 -->
+    <CharacterDrawer
+      v-model="characterDrawerOpen"
+      :character-name="currentCharacterName"
+    />
   </div>
 </template>
 
@@ -103,14 +109,25 @@
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { routes } from './router';
-import { useGameData } from './stores/useGameData';
+import { useGameData, useCharacterDrawer } from './stores';
+import { CharacterDrawer } from './components/character';
 
 const route = useRoute();
 const gameData = useGameData();
+const characterDrawerStore = useCharacterDrawer();
 
 const loading = computed(() => gameData.loading);
 const initialized = computed(() => gameData.initialized);
 const isDirty = computed(() => gameData.isDirty);
+
+// 全局角色抽屉状态
+const characterDrawerOpen = computed({
+  get: () => characterDrawerStore.isOpen,
+  set: val => {
+    if (!val) characterDrawerStore.close();
+  },
+});
+const currentCharacterName = computed(() => characterDrawerStore.currentCharacter || '');
 
 const 时空舆情 = computed(() => gameData.时空舆情);
 const 个人档案 = computed(() => gameData.个人档案);

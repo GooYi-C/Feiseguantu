@@ -10,7 +10,7 @@
         <div class="faction-info">
           <div class="info-item">
             <span class="label">核心人物</span>
-            <span class="value gold">{{ 我方派系.核心人物 }}</span>
+            <span class="value gold"><CharacterName :name="我方派系.核心人物" /></span>
           </div>
           <div class="info-item">
             <span class="label">势力范围</span>
@@ -43,7 +43,7 @@
               </span>
             </div>
             <div class="faction-meta">
-              <span><i class="fas fa-user-tie"></i> {{ faction.核心人物 }}</span>
+              <span class="core-leader"><i class="fas fa-user-tie"></i> <CharacterName :name="faction.核心人物" /></span>
               <span :class="strengthClass(faction.实力评估)">{{ faction.实力评估 }}</span>
             </div>
             <div class="faction-scope" v-if="faction.势力范围 !== '无'">
@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGameData } from '../stores/useGameData';
+import { CharacterName } from '../components/common';
 
 const gameData = useGameData();
 const 派系图谱 = computed(() => gameData.派系图谱);
