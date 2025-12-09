@@ -8,31 +8,28 @@
       </div>
       <div class="toolbar-actions">
         <label class="toggle-filled">
-          <input type="checkbox" v-model="onlyFilled" />
+          <input v-model="onlyFilled" type="checkbox" />
           <span>仅显示已填写</span>
         </label>
-        <button class="action-btn" @click="expandAll">
-          <i class="fas fa-expand"></i> 全部展开
-        </button>
-        <button class="action-btn" @click="collapseAll">
-          <i class="fas fa-compress"></i> 全部折叠
-        </button>
-        <button class="action-btn" @click="handleExport">
-          <i class="fas fa-download"></i> 导出
-        </button>
-        <button class="action-btn" @click="showImportModal = true">
-          <i class="fas fa-upload"></i> 导入
-        </button>
-        <button class="save-btn" @click="saveAll" :disabled="!isDirty">
-          <i class="fas fa-save"></i> 保存全部
-        </button>
+        <button class="action-btn" @click="expandAll"><i class="fas fa-expand"></i> 全部展开</button>
+        <button class="action-btn" @click="collapseAll"><i class="fas fa-compress"></i> 全部折叠</button>
+        <button class="action-btn" @click="handleExport"><i class="fas fa-download"></i> 导出</button>
+        <button class="action-btn" @click="showImportModal = true"><i class="fas fa-upload"></i> 导入</button>
+        <button class="save-btn" :disabled="!isDirty" @click="saveAll"><i class="fas fa-save"></i> 保存全部</button>
       </div>
     </div>
 
     <!-- 分区列表 -->
     <div class="sections-list">
+      <!-- 无匹配结果提示 -->
+      <div v-if="!Object.values(sectionVisible).some(v => v)" class="empty-search-result">
+        <i class="fas fa-search"></i>
+        <p>没有找到匹配的内容</p>
+      </div>
+
       <!-- 时空舆情 -->
       <SectionAccordion
+        v-show="sectionVisible.时空舆情"
         ref="section时空舆情"
         title="时空舆情"
         icon="fas fa-globe"
@@ -46,15 +43,15 @@
         <div class="field-group">
           <div class="field-row">
             <label>当前日期 · 年</label>
-            <input type="number" v-model.number="data.时空舆情.当前日期.年" min="2000" max="2100" />
+            <input v-model.number="data.时空舆情.当前日期.年" type="number" min="2000" max="2100" />
           </div>
           <div class="field-row">
             <label>当前日期 · 月</label>
-            <input type="number" v-model.number="data.时空舆情.当前日期.月" min="1" max="12" />
+            <input v-model.number="data.时空舆情.当前日期.月" type="number" min="1" max="12" />
           </div>
           <div class="field-row">
             <label>当前日期 · 日</label>
-            <input type="number" v-model.number="data.时空舆情.当前日期.日" min="1" max="31" />
+            <input v-model.number="data.时空舆情.当前日期.日" type="number" min="1" max="31" />
           </div>
           <div class="field-row">
             <label>当前日期 · 星期</label>
@@ -64,11 +61,11 @@
           </div>
           <div class="field-row">
             <label>当前时间</label>
-            <input type="text" v-model="data.时空舆情.当前时间" placeholder="HH:MM 或 无" />
+            <input v-model="data.时空舆情.当前时间" type="text" placeholder="HH:MM 或 无" />
           </div>
           <div class="field-row">
             <label>当前地点</label>
-            <input type="text" v-model="data.时空舆情.当前地点" />
+            <input v-model="data.时空舆情.当前地点" type="text" />
           </div>
           <div class="field-row">
             <label>政治气候</label>
@@ -76,7 +73,7 @@
           </div>
           <div class="field-row full">
             <label>重大事件</label>
-            <input type="text" v-model="data.时空舆情.重大事件" />
+            <input v-model="data.时空舆情.重大事件" type="text" />
           </div>
           <div class="field-row full">
             <label>中央动态</label>
@@ -103,6 +100,7 @@
 
       <!-- 当前场景 -->
       <SectionAccordion
+        v-show="sectionVisible.当前场景"
         ref="section当前场景"
         title="当前场景"
         icon="fas fa-map-location-dot"
@@ -116,7 +114,7 @@
         <div class="field-group">
           <div class="field-row">
             <label>场景类型</label>
-            <input type="text" v-model="data.当前场景.场景类型" />
+            <input v-model="data.当前场景.场景类型" type="text" />
           </div>
           <div class="field-row full">
             <label>场景速写</label>
@@ -124,7 +122,7 @@
           </div>
           <div class="field-row">
             <label>气氛基调</label>
-            <input type="text" v-model="data.当前场景.气氛基调" />
+            <input v-model="data.当前场景.气氛基调" type="text" />
           </div>
           <div class="field-row full">
             <label>在场人物</label>
@@ -139,6 +137,7 @@
 
       <!-- 关系索引 -->
       <SectionAccordion
+        v-show="sectionVisible.关系索引"
         ref="section关系索引"
         title="关系索引"
         icon="fas fa-diagram-project"
@@ -152,15 +151,15 @@
         <div class="field-group">
           <div class="field-row">
             <label>一把手</label>
-            <input type="text" v-model="data.关系索引.一把手" placeholder="一把手姓名" />
+            <input v-model="data.关系索引.一把手" type="text" placeholder="一把手姓名" />
           </div>
           <div class="field-row">
             <label>直接上级</label>
-            <input type="text" v-model="data.关系索引.直接上级" placeholder="直接上级姓名" />
+            <input v-model="data.关系索引.直接上级" type="text" placeholder="直接上级姓名" />
           </div>
           <div class="field-row">
             <label>配偶</label>
-            <input type="text" v-model="data.关系索引.配偶" placeholder="配偶姓名" />
+            <input v-model="data.关系索引.配偶" type="text" placeholder="配偶姓名" />
           </div>
           <div class="field-row full">
             <label>靠山列表</label>
@@ -187,6 +186,7 @@
 
       <!-- 人物库 -->
       <SectionAccordion
+        v-show="sectionVisible.人物库"
         ref="section人物库"
         title="人物库"
         icon="fas fa-users"
@@ -199,12 +199,7 @@
         <template #meta>
           <span class="field-count">{{ Object.keys(data.人物库).length }} 人</span>
         </template>
-        <RecordTable
-          v-model="data.人物库"
-          :meta-fields="['职务', '级别']"
-          add-text="新增人物"
-          @add="addCharacter"
-        >
+        <RecordTable v-model="data.人物库" :meta-fields="['职务', '级别']" add-text="新增人物" @add="addCharacter">
           <template #item="{ item, key, update }">
             <div class="char-editor">
               <div class="field-grid">
@@ -222,7 +217,13 @@
                 </div>
                 <div class="field-row">
                   <label>年龄</label>
-                  <input type="number" :value="item.年龄" min="0" max="120" @input="update({ 年龄: ($event.target as HTMLInputElement).valueAsNumber })" />
+                  <input
+                    type="number"
+                    :value="item.年龄"
+                    min="0"
+                    max="120"
+                    @input="update({ 年龄: ($event.target as HTMLInputElement).valueAsNumber })"
+                  />
                 </div>
                 <div class="field-row">
                   <label>体系</label>
@@ -232,19 +233,35 @@
                 </div>
                 <div class="field-row">
                   <label>级别</label>
-                  <input type="text" :value="item.级别" @input="update({ 级别: ($event.target as HTMLInputElement).value })" />
+                  <input
+                    type="text"
+                    :value="item.级别"
+                    @input="update({ 级别: ($event.target as HTMLInputElement).value })"
+                  />
                 </div>
                 <div class="field-row">
                   <label>职务</label>
-                  <input type="text" :value="item.职务" @input="update({ 职务: ($event.target as HTMLInputElement).value })" />
+                  <input
+                    type="text"
+                    :value="item.职务"
+                    @input="update({ 职务: ($event.target as HTMLInputElement).value })"
+                  />
                 </div>
                 <div class="field-row">
                   <label>好感度</label>
-                  <SliderField :model-value="item.好感度" @update:model-value="update({ 好感度: $event })" :show-value="false" />
+                  <SliderField
+                    :model-value="item.好感度"
+                    :show-value="false"
+                    @update:model-value="update({ 好感度: $event })"
+                  />
                 </div>
                 <div class="field-row">
                   <label>信任度</label>
-                  <SliderField :model-value="item.信任度" @update:model-value="update({ 信任度: $event })" :show-value="false" />
+                  <SliderField
+                    :model-value="item.信任度"
+                    :show-value="false"
+                    @update:model-value="update({ 信任度: $event })"
+                  />
                 </div>
               </div>
             </div>
@@ -254,6 +271,7 @@
 
       <!-- 个人档案 -->
       <SectionAccordion
+        v-show="sectionVisible.个人档案"
         ref="section个人档案"
         title="个人档案"
         icon="fas fa-id-card"
@@ -270,7 +288,7 @@
           <div class="field-group">
             <div class="field-row">
               <label>姓名</label>
-              <input type="text" v-model="data.个人档案.基本信息.姓名" />
+              <input v-model="data.个人档案.基本信息.姓名" type="text" />
             </div>
             <div class="field-row">
               <label>性别</label>
@@ -282,31 +300,31 @@
             </div>
             <div class="field-row">
               <label>年龄</label>
-              <input type="number" v-model.number="data.个人档案.基本信息.年龄" min="0" max="120" />
+              <input v-model.number="data.个人档案.基本信息.年龄" type="number" min="0" max="120" />
             </div>
             <div class="field-row">
               <label>民族</label>
-              <input type="text" v-model="data.个人档案.基本信息.民族" />
+              <input v-model="data.个人档案.基本信息.民族" type="text" />
             </div>
             <div class="field-row">
               <label>籍贯</label>
-              <input type="text" v-model="data.个人档案.基本信息.籍贯" />
+              <input v-model="data.个人档案.基本信息.籍贯" type="text" />
             </div>
             <div class="field-row">
               <label>学历</label>
-              <input type="text" v-model="data.个人档案.基本信息.学历" />
+              <input v-model="data.个人档案.基本信息.学历" type="text" />
             </div>
             <div class="field-row">
               <label>毕业院校</label>
-              <input type="text" v-model="data.个人档案.基本信息.毕业院校" />
+              <input v-model="data.个人档案.基本信息.毕业院校" type="text" />
             </div>
             <div class="field-row">
               <label>入党时间</label>
-              <input type="text" v-model="data.个人档案.基本信息.入党时间" />
+              <input v-model="data.个人档案.基本信息.入党时间" type="text" />
             </div>
             <div class="field-row">
               <label>参加工作时间</label>
-              <input type="text" v-model="data.个人档案.基本信息.参加工作时间" />
+              <input v-model="data.个人档案.基本信息.参加工作时间" type="text" />
             </div>
           </div>
         </div>
@@ -334,11 +352,11 @@
           <div class="field-group">
             <div class="field-row">
               <label>职务名称</label>
-              <input type="text" v-model="data.个人档案.现任职务.职务名称" />
+              <input v-model="data.个人档案.现任职务.职务名称" type="text" />
             </div>
             <div class="field-row">
               <label>任职单位</label>
-              <input type="text" v-model="data.个人档案.现任职务.任职单位" />
+              <input v-model="data.个人档案.现任职务.任职单位" type="text" />
             </div>
             <div class="field-row">
               <label>体系</label>
@@ -348,19 +366,19 @@
             </div>
             <div class="field-row">
               <label>级别</label>
-              <input type="text" v-model="data.个人档案.现任职务.级别" />
+              <input v-model="data.个人档案.现任职务.级别" type="text" />
             </div>
             <div class="field-row">
               <label>编制类型</label>
-              <input type="text" v-model="data.个人档案.现任职务.编制类型" />
+              <input v-model="data.个人档案.现任职务.编制类型" type="text" />
             </div>
             <div class="field-row">
               <label>任职时间</label>
-              <input type="text" v-model="data.个人档案.现任职务.任职时间" />
+              <input v-model="data.个人档案.现任职务.任职时间" type="text" />
             </div>
             <div class="field-row">
               <label>任期预期</label>
-              <input type="text" v-model="data.个人档案.现任职务.任期预期" />
+              <input v-model="data.个人档案.现任职务.任期预期" type="text" />
             </div>
             <div class="field-row full">
               <label>前任情况</label>
@@ -379,27 +397,27 @@
           <div class="field-group">
             <div class="field-row">
               <label>派系归属</label>
-              <input type="text" v-model="data.个人档案.政治生态.派系归属" />
+              <input v-model="data.个人档案.政治生态.派系归属" type="text" />
             </div>
             <div class="field-row">
               <label>政治立场</label>
-              <input type="text" v-model="data.个人档案.政治生态.政治立场" />
+              <input v-model="data.个人档案.政治生态.政治立场" type="text" />
             </div>
             <div class="field-row">
               <label>官声</label>
-              <input type="text" v-model="data.个人档案.政治生态.官声" />
+              <input v-model="data.个人档案.政治生态.官声" type="text" />
             </div>
             <div class="field-row">
               <label>群众基础</label>
-              <input type="text" v-model="data.个人档案.政治生态.群众基础" />
+              <input v-model="data.个人档案.政治生态.群众基础" type="text" />
             </div>
             <div class="field-row">
               <label>年度考核</label>
-              <input type="text" v-model="data.个人档案.政治生态.年度考核" />
+              <input v-model="data.个人档案.政治生态.年度考核" type="text" />
             </div>
             <div class="field-row">
               <label>班子内站位</label>
-              <input type="text" v-model="data.个人档案.政治生态.班子内站位" />
+              <input v-model="data.个人档案.政治生态.班子内站位" type="text" />
             </div>
           </div>
         </div>
@@ -419,6 +437,7 @@
 
       <!-- 派系图谱 -->
       <SectionAccordion
+        v-show="sectionVisible.派系图谱"
         ref="section派系图谱"
         title="派系图谱"
         icon="fas fa-sitemap"
@@ -435,11 +454,11 @@
           <div class="field-group">
             <div class="field-row">
               <label>派系名称</label>
-              <input type="text" v-model="data.派系图谱.我方派系.派系名称" />
+              <input v-model="data.派系图谱.我方派系.派系名称" type="text" />
             </div>
             <div class="field-row">
               <label>核心人物</label>
-              <input type="text" v-model="data.派系图谱.我方派系.核心人物" />
+              <input v-model="data.派系图谱.我方派系.核心人物" type="text" />
             </div>
             <div class="field-row full">
               <label>势力范围</label>
@@ -447,7 +466,7 @@
             </div>
             <div class="field-row">
               <label>实力评估</label>
-              <input type="text" v-model="data.派系图谱.我方派系.实力评估" />
+              <input v-model="data.派系图谱.我方派系.实力评估" type="text" />
             </div>
             <div class="field-row full">
               <label>近期动向</label>
@@ -470,6 +489,7 @@
 
       <!-- 绯色履历 -->
       <SectionAccordion
+        v-show="sectionVisible.绯色履历"
         ref="section绯色履历"
         title="绯色履历"
         icon="fas fa-heart"
@@ -492,6 +512,7 @@
 
       <!-- 个人资产 -->
       <SectionAccordion
+        v-show="sectionVisible.个人资产"
         ref="section个人资产"
         title="个人资产"
         icon="fas fa-coins"
@@ -505,19 +526,19 @@
         <div class="field-group">
           <div class="field-row">
             <label>申报资产 (万元)</label>
-            <input type="number" v-model.number="data.个人资产.申报资产" min="0" />
+            <input v-model.number="data.个人资产.申报资产" type="number" min="0" />
           </div>
           <div class="field-row">
             <label>实际资产 (万元)</label>
-            <input type="number" v-model.number="data.个人资产.实际资产" min="0" />
+            <input v-model.number="data.个人资产.实际资产" type="number" min="0" />
           </div>
           <div class="field-row">
             <label>灰色资产 (万元)</label>
-            <input type="number" v-model.number="data.个人资产.灰色资产" min="0" />
+            <input v-model.number="data.个人资产.灰色资产" type="number" min="0" />
           </div>
           <div class="field-row">
             <label>现居住地</label>
-            <input type="text" v-model="data.个人资产.现居住地" />
+            <input v-model="data.个人资产.现居住地" type="text" />
           </div>
         </div>
 
@@ -554,6 +575,7 @@
 
       <!-- 暗账 -->
       <SectionAccordion
+        v-show="sectionVisible.暗账"
         ref="section暗账"
         title="暗账"
         icon="fas fa-user-secret"
@@ -607,6 +629,7 @@
 
       <!-- 机遇与危机 -->
       <SectionAccordion
+        v-show="sectionVisible.机遇与危机"
         ref="section机遇与危机"
         title="机遇与危机"
         icon="fas fa-scale-balanced"
@@ -650,15 +673,12 @@
     </div>
 
     <!-- 导入弹窗 -->
-    <Modal
-      v-model="showImportModal"
-      title="导入数据"
-      icon="fas fa-upload"
-      size="md"
-    >
+    <Modal v-model="showImportModal" title="导入数据" icon="fas fa-upload" size="md">
       <div class="import-content">
         <p class="import-hint">选择 JSON 文件导入，将覆盖当前数据</p>
-        <div class="import-dropzone" :class="{ dragover: isDragover }"
+        <div
+          class="import-dropzone"
+          :class="{ dragover: isDragover }"
           @dragover.prevent="isDragover = true"
           @dragleave="isDragover = false"
           @drop.prevent="handleFileDrop"
@@ -686,11 +706,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue';
-import { useGameData, useCharacters } from '../stores';
-import { SectionAccordion, RecordTable } from '../components/variable';
-import { ArrayEditor, SliderField, Modal } from '../components/common';
 import { klona } from 'klona';
+import { computed, reactive, ref, watch } from 'vue';
+import { ArrayEditor, Modal, SliderField } from '../components/common';
+import { RecordTable, SectionAccordion } from '../components/variable';
+import { useCharacters, useGameData } from '../stores';
 import type { GameData } from '../stores/schema';
 
 const gameData = useGameData();
@@ -716,6 +736,66 @@ watch(
 // 搜索和过滤
 const searchQuery = ref('');
 const onlyFilled = ref(false);
+
+// 搜索匹配函数 - 递归搜索对象中的所有字段
+function matchesSearch(obj: unknown, query: string): boolean {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase();
+
+  if (typeof obj === 'string') {
+    return obj.toLowerCase().includes(q);
+  }
+  if (typeof obj === 'number') {
+    return String(obj).includes(q);
+  }
+  if (Array.isArray(obj)) {
+    return obj.some(item => matchesSearch(item, query));
+  }
+  if (obj && typeof obj === 'object') {
+    return Object.entries(obj).some(([key, value]) => key.toLowerCase().includes(q) || matchesSearch(value, query));
+  }
+  return false;
+}
+
+// 判断对象是否有已填写的内容
+function hasFilledContent(obj: unknown): boolean {
+  if (obj === null || obj === undefined) return false;
+  if (typeof obj === 'string') return obj !== '无' && obj !== '';
+  if (typeof obj === 'number') return obj > 0;
+  if (typeof obj === 'boolean') return obj;
+  if (Array.isArray(obj)) return obj.length > 0;
+  if (typeof obj === 'object') {
+    return Object.values(obj).some(v => hasFilledContent(v));
+  }
+  return false;
+}
+
+// 分区可见性 - 结合搜索和筛选条件
+const sectionVisible = computed(() => {
+  const sections = [
+    '时空舆情',
+    '当前场景',
+    '关系索引',
+    '人物库',
+    '个人档案',
+    '派系图谱',
+    '绯色履历',
+    '个人资产',
+    '暗账',
+    '机遇与危机',
+  ] as const;
+
+  return sections.reduce(
+    (acc, section) => {
+      const sectionData = data[section];
+      const matchSearch = matchesSearch(section, searchQuery.value) || matchesSearch(sectionData, searchQuery.value);
+      const matchFilled = !onlyFilled.value || hasFilledContent(sectionData);
+      acc[section] = matchSearch && matchFilled;
+      return acc;
+    },
+    {} as Record<string, boolean>,
+  );
+});
 
 // 展开状态
 const expanded = reactive<Record<string, boolean>>({
@@ -800,6 +880,130 @@ function addCharacter() {
   toastr.success(`人物「${name}」已添加`);
 }
 
+// 各种 Record 类型的默认字段结构
+const recordTemplates: Record<string, Record<string, any>> = {
+  '个人档案.任职履历': {
+    职务名称: '无',
+    单位: '无',
+    体系: '无',
+    级别: '无',
+    起始年月: '无',
+    结束年月: '无',
+    主要政绩: '无',
+    离任原因: '无',
+  },
+  '个人档案.在手项目': {
+    项目名称: '无',
+    角色定位: '无',
+    进展状态: '无',
+    政治效益: '无',
+    风险等级: '无',
+    预计完成: '无',
+    关联人物: [],
+  },
+  '个人档案.表彰记录': {
+    名称: '无',
+    授予单位: '无',
+    时间: '无',
+  },
+  '个人档案.处分记录': {
+    处分类型: '无',
+    处分原因: '无',
+    处分时间: '无',
+    影响期限: '无',
+  },
+  '个人档案.现任职务.兼任职务': {
+    职务名称: '无',
+  },
+  '个人档案.现任职务.分管领域': {
+    领域名称: '无',
+  },
+  '派系图谱.主要派系': {
+    派系名称: '无',
+    核心人物: '无',
+    势力范围: '无',
+    实力评估: '无',
+    与我派系关系: '无',
+    近期动向: '无',
+  },
+  绯色履历: {
+    对象: '无',
+    起始时间: '无',
+    结束时间: '无',
+    关系性质: '无',
+    结局: '无',
+    遗留问题: '无',
+  },
+  '个人资产.房产': {
+    位置: '无',
+    面积: '无',
+    估值: 0,
+    来源: '无',
+    登记人: '无',
+  },
+  '个人资产.座驾': {
+    品牌型号: '无',
+    来源: '无',
+  },
+  '个人资产.白手套': {
+    人物ID: '无',
+    代持内容: '无',
+    代持金额: 0,
+    可靠程度: '无',
+  },
+  '暗账.被握把柄': {
+    把柄内容: '无',
+    把柄类型: '无',
+    掌握者: '无',
+    致命程度: '无',
+    暴露风险: '无',
+    当前状态: '无',
+  },
+  '暗账.手握把柄': {
+    把柄内容: '无',
+    目标人物: '无',
+    致命程度: '无',
+    可用性: '无',
+  },
+  '暗账.政治地雷': {
+    内容: '无',
+    性质: '无',
+    来源: '无',
+    引爆条件: '无',
+    杀伤力: '无',
+  },
+  '暗账.人情债': {
+    债主: '无',
+    欠债内容: '无',
+    债务性质: '无',
+    偿还压力: '无',
+    已偿还: false,
+  },
+  '机遇与危机.当前机遇': {
+    机遇名称: '无',
+    机遇内容: '无',
+    机遇等级: '无',
+    来源渠道: '无',
+    时效性: '无',
+    所需资源: '无',
+    潜在代价: '无',
+  },
+  '机遇与危机.潜在危机': {
+    危机名称: '无',
+    危机内容: '无',
+    危机等级: '无',
+    危机来源: '无',
+    引爆概率: '无',
+    应对思路: '无',
+  },
+  '机遇与危机.待办事项': {
+    事项: '无',
+    紧急程度: '无',
+    截止时间: '无',
+    关联人物: [],
+  },
+};
+
 function addRecord(path: string, type: string) {
   const name = prompt(`请输入新${type}名称：`);
   if (!name) return;
@@ -812,7 +1016,9 @@ function addRecord(path: string, type: string) {
     toastr.warning(`${type}「${name}」已存在`);
     return;
   }
-  target[name] = {};
+  // 使用模板初始化字段，如果没有对应模板则使用空对象
+  const template = recordTemplates[path] || {};
+  target[name] = klona(template);
   toastr.success(`${type}「${name}」已添加`);
 }
 
@@ -1003,6 +1209,26 @@ async function confirmImport() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+// ═══ 空搜索结果 ═══
+.empty-search-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 48px;
+  color: var(--color-text-muted);
+  text-align: center;
+
+  i {
+    font-size: 48px;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 14px;
+  }
 }
 
 // ═══ 字段组 ═══

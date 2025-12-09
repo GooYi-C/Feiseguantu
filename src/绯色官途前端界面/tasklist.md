@@ -10,7 +10,7 @@
 
 1. [Phase 0: 紧急修复与架构调整](#phase-0-紧急修复与架构调整) ✅ 已完成
 2. [Phase 1: 基础架构重构](#phase-1-基础架构重构) ✅ 已完成
-3. [Phase 2: 核心功能完善](#phase-2-核心功能完善)
+3. [Phase 2: 核心功能完善](#phase-2-核心功能完善) ✅ 已完成
 4. [Phase 3: 页面重构与功能整合](#phase-3-页面重构与功能整合) ⭐ 调整
 5. [Phase 4: UI/UX优化与交互增强](#phase-4-uiux优化与交互增强) ⭐ 扩展
 6. [Phase 5: 体验增强与高级功能](#phase-5-体验增强与高级功能) ⭐ 扩展
@@ -192,6 +192,155 @@
 | `components/common/Modal.vue`         | 创建 | 通用模态框组件             |
 | `components/common/ConfirmDialog.vue` | 创建 | 确认对话框组件             |
 | `components/common/index.ts`          | 创建 | 通用组件统一导出           |
+
+---
+
+### Phase 2 施工记录 (2025-12-09)
+
+**施工状态**: ✅ 已完成
+
+#### 任务 2.1: 人物编辑表单 - CharacterForm.vue ✅
+
+**完成内容**:
+
+- 创建 `components/character/CharacterForm.vue` 完整人物编辑表单组件
+- 实现分段表单：基础信息、数值面板（好感度/信任度/危险度等滑条）、角色标签、关系模块
+- 支持所有基础字段编辑，关系模块手风琴展开（官场/绯色/竞争/靠山/家庭）
+- 实现年龄红线功能：根据级别和年龄动态生成辛辣评语（如"距正处红线仅3年！"）
+- 表单校验与错误提示
+
+**用户反馈修正**:
+
+- 修复 SliderField 双标签问题：将 `showValue` 默认值改为 `false`
+- 将多个枚举字段改为自由输入：`关系类型`、`威胁等级`、`关系阶段`、`紧密度`、`家庭关系.关系`、`风险等级` 等
+- 实现年龄红线评语系统，根据职级/年龄差距显示不同提示（官场出局/前路艰难/正值窗口期/年龄优势明显等）
+
+#### 任务 2.2: 新增人物弹窗 - AddCharacterModal.vue ✅
+
+**完成内容**:
+
+- 创建 `components/character/AddCharacterModal.vue` 替换原生 `prompt()` 弹窗
+- 实现6个预设模板：空白、官场关系、绯色对象、竞争对手、靠山、家庭成员
+- 每个模板预填充相应关系字段的占位值（如"待填写"），确保新建角色可被正确筛选
+- 姓名校验（不能重复、不能为空）
+- 使用 CharacterForm 组件进行编辑
+
+**用户反馈修正**:
+
+- 移除"官员"模板，新增符合筛选逻辑的6个模板
+- 模板预填充 optional 字段，使新建角色立即可按关系类型筛选
+
+#### 任务 2.3: Characters.vue 集成编辑功能 ✅
+
+**完成内容**:
+
+- 更新 `views/Characters.vue`，集成 CharacterForm 和 AddCharacterModal
+- 将 `editCharacter()` 从 toastr 提示改为打开编辑抽屉
+- 将新增人物从 `prompt()` 改为 AddCharacterModal
+- 修复筛选BUG：检查关系对象关键字段有效性，而非仅检查对象是否存在
+
+#### 任务 2.4: 角色详情抽屉 - CharacterDrawer.vue ✅
+
+**完成内容**:
+
+- 创建 `components/character/CharacterDrawer.vue` 右侧滑出抽屉
+- 创建 `stores/useCharacterDrawer.ts` 全局状态管理
+- 实现查看模式：显示角色详细信息、年龄红线评语
+- 实现编辑模式：使用 CharacterForm 编辑
+- 头像上传功能、删除确认
+- 未保存更改提示
+
+**用户反馈修正**:
+
+- 修复头像上传功能（恢复 `<label>` + `<input type="file">` 结构）
+- 修复"未保存更改"误报：使用 `originalEditData` 保存编辑前数据，精确比对变更
+
+#### 任务 2.5: 角色名组件 - CharacterName.vue ✅
+
+**完成内容**:
+
+- 创建 `components/common/CharacterName.vue` 统一角色名显示组件
+- 存在于人物库的角色：显示胶囊标签样式，支持 hover 预览、点击打开抽屉
+- 不存在于人物库的角色：灰色文本，无交互
+- 男/女不同背景色（蓝/粉）
+- 使用 Teleport 渲染 tooltip 到 body，解决容器裁剪问题
+- 正则提取纯名称匹配（处理"王志刚（中纪委案件审理室主任）"格式）
+
+**用户反馈修正**:
+
+- 解决 tooltip 被容器裁剪问题（使用 Teleport + 动态定位）
+- 统一所有页面角色名样式（除绯色关系页外）
+- 添加 `defineOptions({ inheritAttrs: false })` 解决 Vue fragment 警告
+- Dashboard 关系索引 panel 使用彩色 label 区分关系类型（金色一把手/靠山、紫色直接上级、粉色绯色对象等）
+
+#### 任务 2.6: Variables.vue SectionAccordion 组件 ✅
+
+**完成内容**:
+
+- 创建 `components/variable/SectionAccordion.vue` 可折叠区块组件
+- 支持展开/折叠动画、脏数据标记、字段计数、保存按钮
+- 应用于 Variables.vue 的所有数据分区
+
+#### 任务 2.7: Variables.vue RecordTable 组件 ✅
+
+**完成内容**:
+
+- 创建 `components/variable/RecordTable.vue` Record 类型编辑器
+- 支持搜索、分页、新增、删除、展开编辑
+- 自动根据字段类型渲染对应输入控件（文本/数字/布尔/数组/对象）
+
+**用户反馈修正**:
+
+- 添加 `recordTemplates` 对象，为所有 Record 类型定义默认字段模板
+- 新增条目时使用模板初始化，确保展开后有字段可编辑
+- 覆盖类型：任职履历、在手项目、表彰记录、处分记录、主要派系、绯色履历、房产、座驾、白手套、被握把柄、手握把柄、政治地雷、人情债、当前机遇、潜在危机、待办事项
+
+#### 任务 2.8: Variables.vue 搜索与筛选功能 ✅
+
+**完成内容**:
+
+- 实现全局搜索功能：递归搜索所有分区字段名和内容
+- 实现"仅显示已填写"筛选：判断字段是否有实际内容（非"无"、非0、非空数组）
+- 搜索/筛选无结果时显示空状态提示
+- 为所有 SectionAccordion 添加 `v-show` 控制可见性
+
+#### 任务 2.9: 各页面集成角色名组件 ✅
+
+**完成内容**:
+
+- Dashboard.vue：当前场景在场人物、待办事项关联人物、关系索引所有角色使用 CharacterName
+- Opportunities.vue：待办事项关联人物使用 CharacterName
+- Assets.vue：房产登记人、白手套使用 CharacterName
+- Relations.vue：侧边栏角色列表使用 CharacterName
+- Secrets.vue：把柄掌握者、目标人物、债主使用 CharacterName
+- Faction.vue：核心人物使用 CharacterName
+- Romance.vue：保持纯文本（用户要求不使用交互组件）
+
+#### 修改的文件清单
+
+| 文件路径                                     | 操作 | 说明                             |
+| -------------------------------------------- | ---- | -------------------------------- |
+| `components/character/CharacterForm.vue`     | 创建 | 完整人物编辑表单                 |
+| `components/character/AddCharacterModal.vue` | 创建 | 新增人物弹窗（含模板）           |
+| `components/character/CharacterDrawer.vue`   | 创建 | 角色详情抽屉                     |
+| `components/character/index.ts`              | 创建 | 角色组件统一导出                 |
+| `components/common/CharacterName.vue`        | 创建 | 统一角色名组件                   |
+| `components/common/SliderField.vue`          | 修改 | showValue 默认改为 false         |
+| `components/variable/SectionAccordion.vue`   | 创建 | 可折叠区块组件                   |
+| `components/variable/RecordTable.vue`        | 创建 | Record 类型编辑器                |
+| `components/variable/index.ts`               | 创建 | 变量组件统一导出                 |
+| `stores/useCharacterDrawer.ts`               | 创建 | 角色抽屉全局状态                 |
+| `stores/index.ts`                            | 修改 | 导出 useCharacterDrawer          |
+| `views/Characters.vue`                       | 修改 | 集成编辑功能、修复筛选           |
+| `views/Variables.vue`                        | 重构 | 使用 SectionAccordion/RecordTable |
+| `views/Dashboard.vue`                        | 修改 | 集成 CharacterName               |
+| `views/Opportunities.vue`                    | 修改 | 集成 CharacterName               |
+| `views/Assets.vue`                           | 修改 | 集成 CharacterName               |
+| `views/Relations.vue`                        | 修改 | 集成 CharacterName               |
+| `views/Secrets.vue`                          | 修改 | 集成 CharacterName               |
+| `views/Faction.vue`                          | 修改 | 集成 CharacterName               |
+| `views/Romance.vue`                          | 修改 | 移除 CharacterName（用户要求）   |
+| `app.vue`                                    | 修改 | 添加全局 CharacterDrawer         |
 
 ---
 
@@ -2072,7 +2221,7 @@ function hideTooltip() {
 
 #### 任务描述
 
-将「当前场景」页面内容合并到仪表盘，删除独立的 Scene.vue 页面。
+将「当前场景」页面内容合并到仪表盘，删除独立的 Scene.vue 页面。将「个人资产」和 [暗账] 页面合成新的[资产暗账] 页面。
 
 #### 实现要点
 
@@ -2080,6 +2229,7 @@ function hideTooltip() {
 - 显示：时间地点、在场人物、场景氛围、正在进行的事情
 - 在场人物使用 CharacterName 组件（支持hover/点击）
 - 删除 router.ts 中的 scene 路由
+- 资产暗账页面的布局自行规划
 
 #### 验收标准
 
@@ -2087,6 +2237,7 @@ function hideTooltip() {
 - [ ] 在场人物可交互（hover/点击）
 - [ ] Scene.vue 已删除
 - [ ] scene 路由已移除
+- [ ] 资产暗账页面的验收标准自行规划
 
 ---
 
@@ -2550,7 +2701,7 @@ function hideTooltip() {
 
 ---
 
-### 任务 3.6: 实现 Assets.vue (个人资产)
+### 任务 3.6: 实现 Assets.vue (个人资产)并与暗账页面合并为[资产暗账]页面
 
 | 属性         | 值                                           |
 | ------------ | -------------------------------------------- |
@@ -2562,7 +2713,7 @@ function hideTooltip() {
 
 #### 任务描述
 
-实现个人资产页面，展示资产概览和各类资产详情。
+实现个人资产页面，展示资产概览和各类资产详情。并与暗账页面合并为[资产暗账]页面
 
 **当前状态**: ❌ 未实现
 
@@ -2572,6 +2723,7 @@ function hideTooltip() {
 - 房产、座驾、白手套分区展示
 - 金额格式化显示
 - 灰色资产使用警示样式
+- 与原暗账页面合并
 
 #### 验收标准
 
@@ -2579,6 +2731,7 @@ function hideTooltip() {
 - [ ] 各类资产列表正确渲染
 - [ ] 金额格式化显示
 - [ ] 来源/可靠度颜色区分
+- [ ] 暗账变量正确显示、渲染
 
 ---
 
@@ -2610,7 +2763,7 @@ function hideTooltip() {
 - [ ] 列表/看板视图切换正常
 - [ ] 三栏看板正确显示
 - [ ] 等级/紧急程度颜色区分
-- [ ] 关联人物可交互
+- [ ] 关联人物可交互-[角色名]组件，Phase2需要实现
 
 ---
 
