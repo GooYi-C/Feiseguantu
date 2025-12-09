@@ -233,18 +233,24 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useGameData } from '../stores/useGameData';
+import { useCharacters, useLocalCache, useGameData } from '../stores';
 
+// 使用拆分后的 Store
+const characters = useCharacters();
+const localCache = useLocalCache();
 const gameData = useGameData();
+
 const searchQuery = ref('');
 const filterRelation = ref('');
 const selectedChar = ref<string | null>(null);
 const showAddModal = ref(false);
 
-const 人物库 = computed(() => gameData.人物库);
+// 从 useCharacters 获取人物库数据
+const 人物库 = computed(() => characters.人物库);
 
+// 筛选逻辑
 const filteredCharacters = computed(() => {
-  let entries = Object.entries(人物库.value);
+  let entries = characters.人物列表;
 
   // 搜索过滤
   if (searchQuery.value) {
@@ -253,24 +259,44 @@ const filteredCharacters = computed(() => {
       ([name, char]) =>
         name.toLowerCase().includes(q) ||
         (char.职务 as string).toLowerCase().includes(q) ||
-        (char.单位 as string).toLowerCase().includes(q),
+        (char.单位 as string).toLowerCase().includes(q) ||
+        char.角色标签?.some(tag => tag.toLowerCase().includes(q)),
     );
   }
 
-  // 关系类型过滤
+  // 关系类型过滤 - 检查关系对象中的关键字段是否有实际值
   if (filterRelation.value) {
     entries = entries.filter(([, char]) => {
       switch (filterRelation.value) {
         case '官场关系':
-          return !!char.官场关系;
+          // 检查官场关系的关键字段
+          return (
+            char.官场关系 &&
+            (char.官场关系.关系类型 !== '无' ||
+              char.官场关系.立场倾向 !== '无' ||
+              char.官场关系.威胁等级 !== '无' ||
+              char.角色标签?.some(tag => ['直接上级', '一把手'].includes(tag)))
+          );
         case '绯色关系':
-          return !!char.绯色关系;
+          return (
+            (char.绯色关系 && char.绯色关系.关系阶段 && char.绯色关系.关系阶段 !== '无') ||
+            char.角色标签?.includes('绯色对象')
+          );
         case '竞争关系':
-          return !!char.竞争关系;
+          return (
+            (char.竞争关系 && char.竞争关系.竞争目标 && char.竞争关系.竞争目标 !== '无') ||
+            char.角色标签?.some(tag => ['竞争对手', '政治宿敌'].includes(tag))
+          );
         case '靠山关系':
-          return !!char.靠山关系;
+          return (
+            (char.靠山关系 && char.靠山关系.紧密度 && char.靠山关系.紧密度 !== '无') ||
+            char.角色标签?.includes('靠山')
+          );
         case '家庭关系':
-          return !!char.家庭关系;
+          return (
+            (char.家庭关系 && char.家庭关系.关系 && char.家庭关系.关系 !== '无') ||
+            char.角色标签?.includes('家属')
+          );
         default:
           return true;
       }
@@ -286,8 +312,9 @@ function selectChar(name: string) {
   selectedChar.value = name;
 }
 
+// 使用 useLocalCache 获取头像
 function getAvatar(name: string) {
-  return gameData.getAvatar(name);
+  return localCache.getAvatar(name);
 }
 
 function avatarStyle(name: string) {
@@ -295,6 +322,7 @@ function avatarStyle(name: string) {
   return url ? { backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {};
 }
 
+// 使用 useLocalCache 设置头像
 function handleAvatarUpload(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -307,8 +335,10 @@ function handleAvatarUpload(e: Event) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    gameData.setAvatar(selectedChar.value!, reader.result as string);
-    toastr.success('头像已更新');
+    const success = localCache.setAvatar(selectedChar.value!, reader.result as string);
+    if (success) {
+      toastr.success('头像已更新');
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -338,10 +368,15 @@ function editCharacter() {
   toastr.info('编辑功能开发中');
 }
 
+// 使用 useCharacters 删除人物，并同步删除头像
 function confirmDelete() {
   if (!selectedChar.value) return;
   if (confirm(`确定要删除人物「${selectedChar.value}」吗？此操作不可撤销。`)) {
-    gameData.deleteCharacter(selectedChar.value);
+    const name = selectedChar.value;
+    // 删除人物
+    characters.deleteCharacter(name);
+    // 同步删除头像缓存
+    localCache.removeAvatar(name);
     selectedChar.value = null;
     toastr.success('人物已删除');
   }
@@ -860,4 +895,3 @@ function confirmDelete() {
   }
 }
 </style>
-

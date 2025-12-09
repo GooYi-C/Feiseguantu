@@ -9,7 +9,7 @@
 ## 📋 目录
 
 1. [Phase 0: 紧急修复与架构调整](#phase-0-紧急修复与架构调整) ✅ 已完成
-2. [Phase 1: 基础架构重构](#phase-1-基础架构重构)
+2. [Phase 1: 基础架构重构](#phase-1-基础架构重构) ✅ 已完成
 3. [Phase 2: 核心功能完善](#phase-2-核心功能完善)
 4. [Phase 3: 页面重构与功能整合](#phase-3-页面重构与功能整合) ⭐ 调整
 5. [Phase 4: UI/UX优化与交互增强](#phase-4-uiux优化与交互增强) ⭐ 扩展
@@ -82,6 +82,116 @@
 | `views/Scene.vue`       | 删除      | 合并到 Dashboard                 |
 | `views/Dashboard.vue`   | 修改      | 集成当前场景信息                 |
 | `views/*.vue`           | 修改      | 更新 Store 引用                  |
+
+---
+
+### Phase 1 施工记录 (2025-12-09)
+
+**施工状态**: ✅ 已完成
+
+#### 任务 1.1: Store 拆分 - 创建 useCharacters.ts ✅
+
+**完成内容**:
+
+- 创建 `stores/useCharacters.ts` 人物管理专用 Store
+- 继承 `useGameData` 的 `rawData`，实现数据联动
+- 实现分类查询 computed：`绯色对象列表`、`靠山列表`、`竞争对手列表`、`家属列表`
+- 实现人物 CRUD 方法：`addCharacter`、`updateCharacter`、`deleteCharacter`
+- 实现快速查询：`getCharacter`、`existsInLibrary`
+
+#### 任务 1.2: Store 拆分 - 创建 useLocalCache.ts ✅
+
+**完成内容**:
+
+- 创建 `stores/useLocalCache.ts` 本地缓存管理 Store
+- 实现头像缓存管理：`getAvatar`、`setAvatar`、`removeAvatar`、`clearAllAvatars`
+- 使用 localStorage 持久化，key 为 `scarlet_avatars`
+- 实现 4MB 单图大小限制和容量超限时的自动清理（`pruneOldAvatars`）
+
+#### 任务 1.3: 更新 stores/index.ts 统一导出 ✅
+
+**完成内容**:
+
+- 统一导出 `useGameData`、`useCharacters`、`useLocalCache`
+- 导出 Schema 类型：`GameSchema`、`GameData`、`人物`、`绯色关系`
+
+#### 任务 1.4: 更新 Views 的 Store 引用 ✅
+
+**完成内容**:
+
+- 更新 `views/Characters.vue` 使用 `useCharacters` 和 `useLocalCache`
+- 人物 CRUD 操作迁移至 `useCharacters`
+- 头像管理迁移至 `useLocalCache`
+
+#### 任务 1.5: 创建 SliderField.vue 滑条组件 ✅
+
+**完成内容**:
+
+- 创建 `components/common/SliderField.vue`
+- 支持 0-100 数值范围，滑条 + 数字输入双向联动
+- 颜色分级显示：≥80 绿色、≥50 黄色、<50 红色
+
+#### 任务 1.6: 创建 ArrayEditor.vue 数组编辑器 ✅
+
+**完成内容**:
+
+- 创建 `components/common/ArrayEditor.vue`
+- 标签式展示，支持快速添加（Enter）和删除
+- 支持建议列表下拉和重复项检测
+
+#### 任务 1.7: 创建 EnumSelect.vue 枚举选择器 ✅
+
+**完成内容**:
+
+- 创建 `components/common/EnumSelect.vue`
+- 统一的下拉选择样式，支持任意字符串数组作为选项
+
+#### 任务 1.8: 创建 Modal.vue 模态框组件 ✅
+
+**完成内容**:
+
+- 创建 `components/common/Modal.vue`
+- 支持多种尺寸（sm/md/lg/xl/full）
+- 支持点击遮罩关闭、Esc 关闭、持久化模式
+- 使用 Teleport 渲染到 body，带 fade 动画过渡
+- 背景滚动锁定
+
+#### 任务 1.9: 创建 ConfirmDialog.vue 确认对话框 ✅
+
+**完成内容**:
+
+- 创建 `components/common/ConfirmDialog.vue`
+- 基于 Modal 组件封装，支持危险操作模式（红色警示）
+- 支持 loading 状态、自定义图标和按钮文案
+- 危险模式下禁用点击外部关闭
+
+#### 用户反馈修正
+
+**筛选功能 Bug 修复**:
+
+- 原问题：人物库关系筛选失效，选择任意关系类型都显示全部人物
+- 原因分析：仅检查关系对象是否存在（`!!char.官场关系`），但空对象 `{}` 也被判定为存在
+- 修复方案：增加关键字段有效性检查
+  - 官场关系：检查 `关系类型`/`立场倾向`/`威胁等级` 是否为"无"
+  - 绯色关系：检查 `关系阶段` 是否为"无"，或标签含"绯色对象"
+  - 竞争关系：检查 `竞争目标` 是否为"无"，或标签含"竞争对手"/"政治宿敌"
+  - 靠山关系：检查 `紧密度` 是否为"无"，或标签含"靠山"
+  - 家庭关系：检查 `关系` 是否为"无"，或标签含"家属"
+
+#### 修改的文件清单
+
+| 文件路径                              | 操作 | 说明                         |
+| ------------------------------------- | ---- | ---------------------------- |
+| `stores/useCharacters.ts`             | 创建 | 人物管理专用 Store           |
+| `stores/useLocalCache.ts`             | 创建 | 本地缓存管理 Store           |
+| `stores/index.ts`                     | 修改 | 统一导出新增 Store           |
+| `views/Characters.vue`                | 修改 | 更新 Store 引用 + 修复筛选   |
+| `components/common/SliderField.vue`   | 创建 | 滑条组件                     |
+| `components/common/ArrayEditor.vue`   | 创建 | 数组编辑器组件               |
+| `components/common/EnumSelect.vue`    | 创建 | 枚举选择器组件               |
+| `components/common/Modal.vue`         | 创建 | 通用模态框组件               |
+| `components/common/ConfirmDialog.vue` | 创建 | 确认对话框组件               |
+| `components/common/index.ts`          | 创建 | 通用组件统一导出             |
 
 ---
 
@@ -1001,9 +1111,10 @@ export const routes: RouteRecordRaw[] = [
 
 ---
 
-## Phase 1: 基础架构重构
+## Phase 1: 基础架构重构 ✅ 已完成
 
 > **说明**: 本阶段任务保留原有设计，已在任务 0.1 中整合数据持久化优化
+> **完成日期**: 2025-12-09
 
 ### 任务 1.1: Store 拆分 - 创建 useCharacters.ts
 
