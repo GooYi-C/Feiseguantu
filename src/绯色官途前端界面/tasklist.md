@@ -180,18 +180,18 @@
 
 #### 修改的文件清单
 
-| 文件路径                              | 操作 | 说明                         |
-| ------------------------------------- | ---- | ---------------------------- |
-| `stores/useCharacters.ts`             | 创建 | 人物管理专用 Store           |
-| `stores/useLocalCache.ts`             | 创建 | 本地缓存管理 Store           |
-| `stores/index.ts`                     | 修改 | 统一导出新增 Store           |
-| `views/Characters.vue`                | 修改 | 更新 Store 引用 + 修复筛选   |
-| `components/common/SliderField.vue`   | 创建 | 滑条组件                     |
-| `components/common/ArrayEditor.vue`   | 创建 | 数组编辑器组件               |
-| `components/common/EnumSelect.vue`    | 创建 | 枚举选择器组件               |
-| `components/common/Modal.vue`         | 创建 | 通用模态框组件               |
-| `components/common/ConfirmDialog.vue` | 创建 | 确认对话框组件               |
-| `components/common/index.ts`          | 创建 | 通用组件统一导出             |
+| 文件路径                              | 操作 | 说明                       |
+| ------------------------------------- | ---- | -------------------------- |
+| `stores/useCharacters.ts`             | 创建 | 人物管理专用 Store         |
+| `stores/useLocalCache.ts`             | 创建 | 本地缓存管理 Store         |
+| `stores/index.ts`                     | 修改 | 统一导出新增 Store         |
+| `views/Characters.vue`                | 修改 | 更新 Store 引用 + 修复筛选 |
+| `components/common/SliderField.vue`   | 创建 | 滑条组件                   |
+| `components/common/ArrayEditor.vue`   | 创建 | 数组编辑器组件             |
+| `components/common/EnumSelect.vue`    | 创建 | 枚举选择器组件             |
+| `components/common/Modal.vue`         | 创建 | 通用模态框组件             |
+| `components/common/ConfirmDialog.vue` | 创建 | 确认对话框组件             |
+| `components/common/index.ts`          | 创建 | 通用组件统一导出           |
 
 ---
 
