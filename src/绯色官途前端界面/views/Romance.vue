@@ -1,78 +1,83 @@
 <template>
   <div class="romance-page">
-    <!-- 顶部工具栏 -->
-    <div class="toolbar">
-      <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input v-model="searchQuery" type="text" placeholder="搜索绯色对象..." />
-      </div>
-      <div class="stats">
-        <span class="count"><i class="fas fa-heart"></i> {{ 绯色对象列表.length }} 位绯色对象</span>
-      </div>
-    </div>
-
-    <!-- 绯色对象卡片网格 -->
-    <div class="romance-grid">
-      <div
-        v-for="char in filteredRomanceList"
-        :key="char.name"
-        class="romance-card"
-        :class="{ selected: selectedChar === char.name }"
-        @click="selectChar(char.name)"
-      >
-        <!-- 头像/封面 -->
-        <div class="card-cover" :style="coverStyle(char.name)">
-          <div class="cover-overlay"></div>
-          <label class="upload-cover" title="上传封面">
-            <i class="fas fa-image"></i>
-            <input type="file" accept="image/*" hidden @change="e => handleCoverUpload(e, char.name)" />
-          </label>
-          <div class="danger-indicator" :class="dangerLevel(char.绯色关系?.危险度 || 0)">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>{{ char.绯色关系?.危险度 || 0 }}%</span>
-          </div>
-        </div>
-
-        <!-- 卡片内容 -->
-        <div class="card-content">
-          <h3 class="char-name">{{ char.name }}</h3>
-          <div v-if="char.职务 !== '无'" class="char-position">{{ char.职务 }}</div>
-
-          <!-- 关系阶段进度 -->
-          <div v-if="char.绯色关系" class="stage-progress">
-            <span class="stage-label">{{ char.绯色关系.关系阶段 }}</span>
-            <div class="stage-bar">
-              <div class="stage-fill" :style="{ width: stageProgress(char.绯色关系.关系阶段) + '%' }"></div>
+    <!-- 横向滚动卡片区 -->
+    <div class="romance-carousel" ref="carouselRef" @wheel.prevent="handleWheel">
+      <div class="carousel-track" :style="{ transform: `translateX(${scrollOffset}px)` }">
+        <div
+          v-for="char in sortedRomanceList"
+          :key="char.name"
+          class="romance-card"
+          :class="{ selected: selectedChar === char.name }"
+          @click="selectChar(char.name)"
+        >
+          <!-- 封面图片区域（占 61.8% 高度） -->
+          <div class="card-cover" :style="romanceCoverStyle(char.name)">
+            <div class="cover-gradient"></div>
+            <!-- 上传按钮 -->
+            <button class="upload-btn" title="上传绯色封面" @click.stop="openImageUploader(char.name)">
+              <i class="fas fa-camera"></i>
+            </button>
+            <!-- 好感度指示 -->
+            <div class="favor-badge">
+              <i class="fas fa-heart"></i>
+              <span>{{ char.好感度 || 50 }}%</span>
+            </div>
+            <!-- 危险度指示 -->
+            <div class="danger-badge" :class="dangerLevel(char.绯色关系?.危险度 || 0)">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>{{ char.绯色关系?.危险度 || 0 }}%</span>
             </div>
           </div>
 
-          <!-- 情绪状态 -->
-          <div
-            v-if="char.绯色关系?.情绪状态 !== '无'"
-            class="emotion-tag"
-            :class="emotionClass(char.绯色关系?.情绪状态)"
-          >
-            <i class="fas fa-face-smile-beam"></i>
-            {{ char.绯色关系?.情绪状态 }}
-          </div>
+          <!-- 信息区域 -->
+          <div class="card-info">
+            <h3 class="char-name">{{ char.name }}</h3>
+            <div v-if="char.职务 !== '无'" class="char-position">{{ char.职务 }}</div>
 
-          <!-- 身份标签 -->
-          <div v-if="char.绯色关系?.身份标签?.length" class="identity-tags">
-            <span v-for="tag in char.绯色关系.身份标签.slice(0, 3)" :key="tag" class="id-tag">{{ tag }}</span>
-          </div>
+            <!-- 关系阶段 + 情绪状态（并列一排） -->
+            <div class="status-row">
+              <div v-if="char.绯色关系?.关系阶段" class="stage-tag" :class="stageClass(char.绯色关系.关系阶段)">
+                {{ char.绯色关系.关系阶段 }}
+              </div>
+              <div
+                v-if="char.绯色关系?.情绪状态 !== '无'"
+                class="emotion-tag"
+                :class="emotionClass(char.绯色关系?.情绪状态)"
+              >
+                <i class="fas fa-face-smile-beam"></i>
+                {{ char.绯色关系?.情绪状态 }}
+              </div>
+            </div>
 
-          <!-- 近期事件 -->
-          <div v-if="char.绯色关系?.近期事件 !== '无'" class="recent-event">
-            <i class="fas fa-clock-rotate-left"></i>
-            <span>{{ truncate(char.绯色关系?.近期事件 || '', 40) }}</span>
+            <!-- 身份标签 -->
+            <div v-if="char.绯色关系?.身份标签?.length" class="identity-tags">
+              <span v-for="tag in char.绯色关系.身份标签.slice(0, 3)" :key="tag" class="id-tag">{{ tag }}</span>
+            </div>
+
+            <!-- 近期事件 -->
+            <div v-if="char.绯色关系?.近期事件 !== '无'" class="recent-event">
+              <i class="fas fa-clock-rotate-left"></i>
+              「{{ truncate(char.绯色关系?.近期事件 || '', 30) }}」
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-if="filteredRomanceList.length === 0" class="empty-state">
+      <div v-if="sortedRomanceList.length === 0" class="empty-state">
         <i class="fas fa-heart-crack"></i>
         <p>暂无绯色对象</p>
       </div>
+    </div>
+
+    <!-- 滚动指示器 -->
+    <div v-if="sortedRomanceList.length > 0" class="scroll-indicator">
+      <div
+        class="scroll-thumb"
+        :style="{
+          width: thumbWidth + '%',
+          left: thumbPosition + '%',
+        }"
+      ></div>
     </div>
 
     <!-- 详情抽屉 -->
@@ -81,7 +86,7 @@
       <aside class="drawer romance-drawer" :class="{ open: !!selectedChar }">
         <template v-if="selectedChar && selectedCharacter">
           <div class="drawer-header">
-            <div class="drawer-cover" :style="coverStyle(selectedChar)">
+            <div class="drawer-cover" :style="romanceCoverStyle(selectedChar)">
               <div class="cover-gradient"></div>
             </div>
             <div class="drawer-title-area">
@@ -109,6 +114,10 @@
                 <span class="status-value" :class="emotionClass(selectedCharacter.绯色关系?.情绪状态)">
                   {{ selectedCharacter.绯色关系?.情绪状态 }}
                 </span>
+              </div>
+              <div class="status-row">
+                <span class="status-label">好感度</span>
+                <span class="status-value highlight">{{ selectedCharacter.好感度 || 50 }}%</span>
               </div>
               <div class="danger-meter">
                 <span class="danger-label">危险度</span>
@@ -170,26 +179,61 @@
         </template>
       </aside>
     </Teleport>
+
+    <!-- 图片上传弹窗 -->
+    <Teleport to="body">
+      <div v-if="showImageUploader" class="image-uploader-modal" @click.self="closeImageUploader">
+        <div class="uploader-dialog">
+          <div class="uploader-header">
+            <h3><i class="fas fa-crop-alt"></i> 上传绯色封面</h3>
+            <button class="close-btn" @click="closeImageUploader">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="uploader-body">
+            <ImageUploader
+              :default-output-size="300"
+              default-shape="portrait"
+              :max-size="500"
+              @upload="handleImageUpload"
+            />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useGameData } from '../stores';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { ImageUploader } from '../components/common';
+import { useGameData, useLocalCache } from '../stores';
 
 const gameData = useGameData();
-const searchQuery = ref('');
+const localCache = useLocalCache();
+
 const selectedChar = ref<string | null>(null);
 const showSensitive = ref(false);
+const carouselRef = ref<HTMLElement | null>(null);
+const scrollOffset = ref(0);
+const maxScrollOffset = ref(0);
+const cardWidth = 280; // 卡片宽度
+const cardGap = 24; // 卡片间距
+
+// 图片上传弹窗状态
+const showImageUploader = ref(false);
+const uploadingCharName = ref<string | null>(null);
+
+// 绯色专用头像 key 前缀
+const ROMANCE_AVATAR_PREFIX = 'romance_';
 
 const 绯色对象列表 = computed(() => gameData.绯色对象列表);
 
-const filteredRomanceList = computed(() => {
-  if (!searchQuery.value) return 绯色对象列表.value;
-  const q = searchQuery.value.toLowerCase();
-  return 绯色对象列表.value.filter(
-    c => c.name.toLowerCase().includes(q) || (c.职务 as string).toLowerCase().includes(q),
-  );
+// 按好感度从高到低排序
+const sortedRomanceList = computed(() => {
+  const list = [...绯色对象列表.value];
+  // 按好感度排序
+  return list.sort((a, b) => (b.好感度 || 50) - (a.好感度 || 50));
 });
 
 const selectedCharacter = computed(() => {
@@ -197,32 +241,70 @@ const selectedCharacter = computed(() => {
   return gameData.人物库[selectedChar.value];
 });
 
+// 计算最大滚动偏移
+function updateMaxScroll() {
+  if (!carouselRef.value) return;
+  const containerWidth = carouselRef.value.clientWidth;
+  const totalWidth = sortedRomanceList.value.length * (cardWidth + cardGap);
+  maxScrollOffset.value = Math.max(0, totalWidth - containerWidth + 40);
+}
+
+// 滚动指示器
+const thumbWidth = computed(() => {
+  if (maxScrollOffset.value === 0) return 100;
+  const containerWidth = carouselRef.value?.clientWidth || 800;
+  const totalWidth = sortedRomanceList.value.length * (cardWidth + cardGap);
+  return Math.max(20, (containerWidth / totalWidth) * 100);
+});
+
+const thumbPosition = computed(() => {
+  if (maxScrollOffset.value === 0) return 0;
+  return (Math.abs(scrollOffset.value) / maxScrollOffset.value) * (100 - thumbWidth.value);
+});
+
+// 处理滚轮事件
+function handleWheel(e: WheelEvent) {
+  const delta = e.deltaY || e.deltaX;
+  scrollOffset.value = Math.min(0, Math.max(-maxScrollOffset.value, scrollOffset.value - delta));
+}
+
+// 绯色专用头像（独立存储）
+function getRomanceAvatar(name: string): string | null {
+  return localCache.getAvatar(ROMANCE_AVATAR_PREFIX + name);
+}
+
+function setRomanceAvatar(name: string, dataUrl: string): boolean {
+  return localCache.setAvatar(ROMANCE_AVATAR_PREFIX + name, dataUrl);
+}
+
+// 封面样式（只使用绯色专用头像，不回退到通用头像，保持完全独立）
+function romanceCoverStyle(name: string) {
+  const romanceAvatar = getRomanceAvatar(name);
+  return romanceAvatar ? { backgroundImage: `url(${romanceAvatar})` } : {};
+}
+
 function selectChar(name: string) {
   selectedChar.value = name;
   showSensitive.value = false;
 }
 
-function coverStyle(name: string) {
-  const url = gameData.getAvatar(name);
-  return url ? { backgroundImage: `url(${url})` } : {};
+// 图片上传弹窗
+function openImageUploader(name: string) {
+  uploadingCharName.value = name;
+  showImageUploader.value = true;
 }
 
-function handleCoverUpload(e: Event, name: string) {
-  const input = e.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+function closeImageUploader() {
+  showImageUploader.value = false;
+  uploadingCharName.value = null;
+}
 
-  if (file.size > 4 * 1024 * 1024) {
-    toastr.warning('图片大小不能超过 4MB');
-    return;
+function handleImageUpload(dataUrl: string) {
+  if (uploadingCharName.value) {
+    setRomanceAvatar(uploadingCharName.value, dataUrl);
+    toastr.success('绯色封面已更新');
   }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    gameData.setAvatar(name, reader.result as string);
-    toastr.success('封面已更新');
-  };
-  reader.readAsDataURL(file);
+  closeImageUploader();
 }
 
 function dangerLevel(danger: number) {
@@ -232,20 +314,12 @@ function dangerLevel(danger: number) {
   return 'low';
 }
 
-function stageProgress(stage: string | undefined) {
-  const stages = [
-    '素未谋面',
-    '初步接触',
-    '暧昧试探',
-    '激情突破',
-    '稳定维持',
-    '如胶似漆',
-    '激情消退',
-    '关系决裂',
-    '彻底终结',
-  ];
-  const idx = stages.indexOf(stage || '');
-  return idx >= 0 ? ((idx + 1) / stages.length) * 100 : 0;
+function stageClass(stage: string) {
+  const hotStages = ['激情突破', '如胶似漆', '稳定维持'];
+  const coldStages = ['激情消退', '关系决裂'];
+  if (hotStages.includes(stage)) return 'hot';
+  if (coldStages.includes(stage)) return 'cold';
+  return '';
 }
 
 function emotionClass(emotion: string | undefined) {
@@ -259,81 +333,63 @@ function emotionClass(emotion: string | undefined) {
 function truncate(text: string, len: number) {
   return text.length > len ? text.slice(0, len) + '...' : text;
 }
+
+// 生命周期
+onMounted(() => {
+  updateMaxScroll();
+  window.addEventListener('resize', updateMaxScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateMaxScroll);
+});
 </script>
 
 <style lang="scss" scoped>
 .romance-page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  height: 100%;
+  overflow: hidden;
 }
 
-// ═══ 工具栏 ═══
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.search-box {
+// ═══ 横向滚动区域 ═══
+.romance-carousel {
   flex: 1;
-  max-width: 300px;
+  overflow: hidden;
+  perspective: 1000px;
+  padding: var(--spacing-sm) 0;
+}
+
+.carousel-track {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-
-  i {
-    color: var(--color-text-muted);
-  }
-
-  input {
-    flex: 1;
-    color: var(--color-text-primary);
-
-    &::placeholder {
-      color: var(--color-text-muted);
-    }
-  }
+  gap: 24px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.stats {
-  .count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--color-romance-light);
-
-    i {
-      color: var(--color-romance);
-    }
-  }
-}
-
-// ═══ 卡片网格 ═══
-.romance-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-}
-
+// ═══ 卡片样式 ═══
 .romance-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  width: 280px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--color-bg-card) 0%, rgba(30, 20, 25, 0.95) 100%);
+  border: 2px solid rgba(196, 30, 58, 0.3);
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-style: preserve-3d;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-glow-romance);
+    transform: scale(1.08) translateY(-8px);
     border-color: var(--color-romance);
+    box-shadow:
+      0 25px 60px rgba(196, 30, 58, 0.4),
+      0 0 40px rgba(255, 77, 109, 0.25);
+    z-index: 10;
   }
 
   &.selected {
@@ -342,51 +398,85 @@ function truncate(text: string, len: number) {
   }
 }
 
+// 封面区域（与裁剪比例 3:4 一致，所见即所得）
 .card-cover {
   position: relative;
-  height: 120px;
-  background: linear-gradient(135deg, rgba(196, 30, 58, 0.3) 0%, rgba(255, 77, 109, 0.1) 100%);
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(135deg, rgba(196, 30, 58, 0.5) 0%, rgba(120, 20, 40, 0.4) 100%);
   background-size: cover;
   background-position: center;
 
-  .cover-overlay {
+  .cover-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, transparent 50%, var(--color-bg-card) 100%);
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 50%,
+      rgba(30, 20, 25, 0.8) 85%,
+      rgba(30, 20, 25, 1) 100%
+    );
   }
 }
 
-.upload-cover {
+.upload-btn {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   border-radius: var(--radius-sm);
   color: white;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transition: all var(--transition-fast);
 
   .romance-card:hover & {
     opacity: 1;
   }
+
+  &:hover {
+    background: var(--color-romance);
+    transform: scale(1.1);
+  }
 }
 
-.danger-indicator {
+.favor-badge {
   position: absolute;
-  bottom: var(--spacing-sm);
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(255, 77, 109, 0.9);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 77, 109, 0.4);
+
+  i {
+    font-size: 10px;
+  }
+}
+
+.danger-badge {
+  position: absolute;
+  bottom: var(--spacing-md);
   left: var(--spacing-sm);
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   border-radius: var(--radius-sm);
   font-size: 11px;
   color: white;
@@ -403,43 +493,56 @@ function truncate(text: string, len: number) {
   }
 }
 
-.card-content {
-  padding: var(--spacing-md);
+// 信息区域
+.card-info {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+// 关系阶段 + 情绪状态并列
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .char-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--color-text-primary);
-  margin-bottom: 2px;
+  margin: 0;
 }
 
 .char-position {
   font-size: 12px;
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
 }
 
-.stage-progress {
-  margin-bottom: var(--spacing-sm);
+.stage-tag {
+  display: inline-block;
+  width: fit-content;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 77, 109, 0.15);
+  border: 1px solid rgba(255, 77, 109, 0.3);
+  border-radius: var(--radius-full);
+  color: var(--color-romance-light);
 
-  .stage-label {
-    font-size: 11px;
-    color: var(--color-romance-light);
+  &.hot {
+    background: rgba(255, 77, 109, 0.25);
+    border-color: var(--color-romance);
+    color: var(--color-romance);
   }
 
-  .stage-bar {
-    height: 4px;
-    background: var(--color-bg-elevated);
-    border-radius: 2px;
-    margin-top: 4px;
-    overflow: hidden;
-
-    .stage-fill {
-      height: 100%;
-      background: var(--color-romance-gradient);
-      border-radius: 2px;
-    }
+  &.cold {
+    background: rgba(122, 162, 247, 0.15);
+    border-color: rgba(122, 162, 247, 0.3);
+    color: var(--color-info);
   }
 }
 
@@ -447,12 +550,12 @@ function truncate(text: string, len: number) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  width: fit-content;
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: 10px;
   background: var(--color-bg-elevated);
   border-radius: var(--radius-full);
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
 
   &.positive {
     background: rgba(74, 193, 142, 0.15);
@@ -472,12 +575,11 @@ function truncate(text: string, len: number) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-bottom: var(--spacing-sm);
 }
 
 .id-tag {
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 9px;
   background: rgba(255, 77, 109, 0.1);
   border-radius: var(--radius-sm);
   color: var(--color-romance-light);
@@ -487,36 +589,60 @@ function truncate(text: string, len: number) {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: 11px;
   color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.4;
 
   i {
     margin-top: 2px;
-    color: var(--color-text-muted);
+    font-size: 10px;
+    flex-shrink: 0;
   }
 }
 
+// ═══ 滚动指示器 ═══
+.scroll-indicator {
+  height: 4px;
+  background: var(--color-bg-elevated);
+  border-radius: 2px;
+  margin: 0 var(--spacing-lg);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.scroll-thumb {
+  position: absolute;
+  height: 100%;
+  background: var(--color-romance-gradient);
+  border-radius: 2px;
+  transition: left 0.1s ease-out;
+}
+
+// ═══ 空状态 ═══
 .empty-state {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  height: 100%;
   gap: var(--spacing-md);
-  padding: var(--spacing-2xl);
   color: var(--color-text-muted);
 
   i {
-    font-size: 48px;
+    font-size: 64px;
     color: var(--color-romance);
-    opacity: 0.5;
+    opacity: 0.3;
   }
 }
 
-// ═══ 抽屉 ═══
+// ═══ 抽屉样式 ═══
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-slow);
@@ -550,7 +676,9 @@ function truncate(text: string, len: number) {
 
 .drawer-header {
   position: relative;
-  min-height: 160px;
+  // 使用 3:4 比例，与裁剪和卡片封面一致
+  aspect-ratio: 3 / 4;
+  max-height: 50vh; // 限制最大高度
 }
 
 .drawer-cover {
@@ -558,12 +686,12 @@ function truncate(text: string, len: number) {
   inset: 0;
   background: var(--color-romance-gradient);
   background-size: cover;
-  background-position: center;
+  background-position: center top; // 优先显示顶部（通常是脸部）
 
   .cover-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, transparent 30%, var(--color-bg-card) 100%);
+    background: linear-gradient(to bottom, transparent 40%, var(--color-bg-card) 100%);
   }
 }
 
@@ -573,10 +701,11 @@ function truncate(text: string, len: number) {
   left: var(--spacing-lg);
 
   h3 {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: white;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+    margin: 0;
   }
 
   .subtitle {
@@ -589,17 +718,19 @@ function truncate(text: string, len: number) {
   position: absolute;
   top: var(--spacing-md);
   right: var(--spacing-md);
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   border-radius: var(--radius-sm);
   color: white;
+  font-size: 16px;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 77, 109, 0.6);
   }
 }
 
@@ -694,7 +825,7 @@ function truncate(text: string, len: number) {
     font-size: 13px;
     font-weight: 600;
     color: var(--color-text-primary);
-    margin-bottom: var(--spacing-sm);
+    margin: 0 0 var(--spacing-sm);
 
     i {
       color: var(--color-romance-light);
@@ -725,7 +856,6 @@ function truncate(text: string, len: number) {
 
 .grip-row {
   margin-bottom: var(--spacing-sm);
-
   &:last-child {
     margin-bottom: 0;
   }
@@ -740,7 +870,6 @@ function truncate(text: string, len: number) {
   .grip-value {
     font-size: 13px;
     color: var(--color-text-secondary);
-
     &.danger {
       color: var(--color-danger);
     }
@@ -772,10 +901,73 @@ function truncate(text: string, len: number) {
     font-size: 12px;
     color: var(--color-romance-light);
   }
-
   .contact-detail {
     font-size: 13px;
     color: var(--color-text-secondary);
   }
+}
+
+// ═══ 图片上传弹窗 ═══
+.image-uploader-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+}
+
+.uploader-dialog {
+  width: 460px;
+  max-width: 95vw;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.uploader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+
+    i {
+      color: var(--color-romance);
+    }
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+
+    &:hover {
+      background: var(--color-bg-elevated);
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+.uploader-body {
+  padding: var(--spacing-lg);
 }
 </style>

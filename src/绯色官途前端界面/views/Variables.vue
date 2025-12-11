@@ -15,6 +15,9 @@
         <button class="action-btn" @click="collapseAll"><i class="fas fa-compress"></i> 全部折叠</button>
         <button class="action-btn" @click="handleExport"><i class="fas fa-download"></i> 导出</button>
         <button class="action-btn" @click="showImportModal = true"><i class="fas fa-upload"></i> 导入</button>
+        <button class="action-btn danger" @click="showClearCacheConfirm = true">
+          <i class="fas fa-trash-alt"></i> 清除头像缓存
+        </button>
         <button class="save-btn" :disabled="!isDirty" @click="saveAll"><i class="fas fa-save"></i> 保存全部</button>
       </div>
     </div>
@@ -200,7 +203,7 @@
           <span class="field-count">{{ Object.keys(data.人物库).length }} 人</span>
         </template>
         <RecordTable v-model="data.人物库" :meta-fields="['职务', '级别']" add-text="新增人物" @add="addCharacter">
-          <template #item="{ item, key, update }">
+          <template #item="{ item, update }">
             <div class="char-editor">
               <div class="field-grid">
                 <div class="field-row">
@@ -389,6 +392,52 @@
               <textarea v-model="data.个人档案.现任职务.前任遗留" rows="2"></textarea>
             </div>
           </div>
+          <!-- 兼任职务 -->
+          <div class="nested-section">
+            <h6><i class="fas fa-briefcase"></i> 兼任职务</h6>
+            <RecordTable
+              v-model="data.个人档案.现任职务.兼任职务"
+              :meta-fields="['职务名称']"
+              add-text="新增兼任"
+              @add="addRecord('个人档案.现任职务.兼任职务', '兼任职务')"
+            />
+          </div>
+          <!-- 分管领域 -->
+          <div class="nested-section">
+            <h6><i class="fas fa-sitemap"></i> 分管领域</h6>
+            <RecordTable
+              v-model="data.个人档案.现任职务.分管领域"
+              :meta-fields="['领域名称']"
+              add-text="新增领域"
+              @add="addRecord('个人档案.现任职务.分管领域', '分管领域')"
+            />
+          </div>
+        </div>
+
+        <!-- 晋升状态子区块 -->
+        <div class="sub-section">
+          <h5><i class="fas fa-chart-line"></i> 晋升状态</h5>
+          <div class="field-group">
+            <div class="field-row">
+              <label>是否冻结</label>
+              <select v-model="data.个人档案.晋升状态.是否冻结">
+                <option :value="false">否</option>
+                <option :value="true">是</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>冻结原因</label>
+              <input v-model="data.个人档案.晋升状态.冻结原因" type="text" />
+            </div>
+            <div class="field-row">
+              <label>预计解除</label>
+              <input v-model="data.个人档案.晋升状态.预计解除" type="text" />
+            </div>
+            <div class="field-row">
+              <label>下一目标</label>
+              <input v-model="data.个人档案.晋升状态.下一目标" type="text" />
+            </div>
+          </div>
         </div>
 
         <!-- 政治生态子区块 -->
@@ -432,6 +481,172 @@
             :show-toolbar="true"
             @add="addRecord('个人档案.任职履历', '履历')"
           />
+        </div>
+
+        <!-- 在手项目 -->
+        <div class="sub-section">
+          <h5><i class="fas fa-tasks"></i> 在手项目</h5>
+          <RecordTable
+            v-model="data.个人档案.在手项目"
+            :meta-fields="['项目名称', '进展状态']"
+            add-text="新增项目"
+            @add="addRecord('个人档案.在手项目', '项目')"
+          >
+            <template #item="{ item, update }">
+              <div class="record-editor">
+                <div class="field-grid">
+                  <div class="field-row">
+                    <label>项目名称</label>
+                    <input
+                      type="text"
+                      :value="item.项目名称"
+                      @input="update({ 项目名称: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>角色定位</label>
+                    <input
+                      type="text"
+                      :value="item.角色定位"
+                      @input="update({ 角色定位: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>进展状态</label>
+                    <input
+                      type="text"
+                      :value="item.进展状态"
+                      @input="update({ 进展状态: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>政治效益</label>
+                    <input
+                      type="text"
+                      :value="item.政治效益"
+                      @input="update({ 政治效益: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>风险等级</label>
+                    <input
+                      type="text"
+                      :value="item.风险等级"
+                      @input="update({ 风险等级: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>预计完成</label>
+                    <input
+                      type="text"
+                      :value="item.预计完成"
+                      @input="update({ 预计完成: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row full">
+                    <label>关联人物</label>
+                    <ArrayEditor
+                      :model-value="item.关联人物 || []"
+                      :suggestions="人物名单"
+                      @update:model-value="update({ 关联人物: $event })"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </RecordTable>
+        </div>
+
+        <!-- 表彰记录 -->
+        <div class="sub-section">
+          <h5><i class="fas fa-medal"></i> 表彰记录</h5>
+          <RecordTable
+            v-model="data.个人档案.表彰记录"
+            :meta-fields="['名称', '授予单位']"
+            add-text="新增表彰"
+            @add="addRecord('个人档案.表彰记录', '表彰')"
+          >
+            <template #item="{ item, update }">
+              <div class="record-editor">
+                <div class="field-grid">
+                  <div class="field-row">
+                    <label>名称</label>
+                    <input
+                      type="text"
+                      :value="item.名称"
+                      @input="update({ 名称: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>授予单位</label>
+                    <input
+                      type="text"
+                      :value="item.授予单位"
+                      @input="update({ 授予单位: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>时间</label>
+                    <input
+                      type="text"
+                      :value="item.时间"
+                      @input="update({ 时间: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </RecordTable>
+        </div>
+
+        <!-- 处分记录 -->
+        <div class="sub-section">
+          <h5><i class="fas fa-gavel"></i> 处分记录</h5>
+          <RecordTable
+            v-model="data.个人档案.处分记录"
+            :meta-fields="['处分类型', '处分原因']"
+            add-text="新增处分"
+            @add="addRecord('个人档案.处分记录', '处分')"
+          >
+            <template #item="{ item, update }">
+              <div class="record-editor">
+                <div class="field-grid">
+                  <div class="field-row">
+                    <label>处分类型</label>
+                    <input
+                      type="text"
+                      :value="item.处分类型"
+                      @input="update({ 处分类型: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>处分原因</label>
+                    <input
+                      type="text"
+                      :value="item.处分原因"
+                      @input="update({ 处分原因: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>处分时间</label>
+                    <input
+                      type="text"
+                      :value="item.处分时间"
+                      @input="update({ 处分时间: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                  <div class="field-row">
+                    <label>影响期限</label>
+                    <input
+                      type="text"
+                      :value="item.影响期限"
+                      @input="update({ 影响期限: ($event.target as HTMLInputElement).value })"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </RecordTable>
         </div>
       </SectionAccordion>
 
@@ -702,6 +917,19 @@
         </button>
       </template>
     </Modal>
+
+    <!-- 清除缓存确认弹窗 -->
+    <Modal v-model="showClearCacheConfirm" title="确认清除" size="sm">
+      <div class="clear-cache-confirm">
+        <i class="fas fa-exclamation-triangle warning-icon"></i>
+        <p>确定要清除所有上传的头像缓存吗？</p>
+        <p class="hint">此操作将删除所有角色头像和绯色封面图片，且不可恢复。</p>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showClearCacheConfirm = false">取消</button>
+        <button class="btn-danger" @click="confirmClearCache"><i class="fas fa-trash-alt"></i> 确认清除</button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -710,11 +938,12 @@ import { klona } from 'klona';
 import { computed, reactive, ref, watch } from 'vue';
 import { ArrayEditor, Modal, SliderField } from '../components/common';
 import { RecordTable, SectionAccordion } from '../components/variable';
-import { useCharacters, useGameData } from '../stores';
+import { useCharacters, useGameData, useLocalCache } from '../stores';
 import type { GameData } from '../stores/schema';
 
 const gameData = useGameData();
 const characters = useCharacters();
+const localCache = useLocalCache();
 
 // 本地编辑副本
 const data = reactive(klona(gameData.rawData));
@@ -1102,6 +1331,16 @@ async function confirmImport() {
     toastr.error('导入失败');
   }
 }
+
+// ═══ 清除缓存 ═══
+
+const showClearCacheConfirm = ref(false);
+
+function confirmClearCache() {
+  localCache.clearAllAvatars();
+  showClearCacheConfirm.value = false;
+  toastr.success('头像缓存已清除');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1180,6 +1419,16 @@ async function confirmImport() {
   &:hover {
     background: var(--color-bg-elevated);
     color: var(--color-text-primary);
+  }
+
+  &.danger {
+    border-color: rgba(220, 53, 69, 0.5);
+    color: var(--color-danger);
+
+    &:hover {
+      background: rgba(220, 53, 69, 0.1);
+      border-color: var(--color-danger);
+    }
   }
 }
 
@@ -1316,6 +1565,42 @@ async function confirmImport() {
   }
 }
 
+// ═══ 嵌套区块 ═══
+.nested-section {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-md);
+
+  h6 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--spacing-sm);
+
+    i {
+      color: var(--color-gold);
+      font-size: 10px;
+    }
+  }
+}
+
+// ═══ 记录编辑器 ═══
+.record-editor {
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
 // ═══ 数值网格 ═══
 .stats-grid {
   display: grid;
@@ -1447,6 +1732,46 @@ async function confirmImport() {
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.btn-danger {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+}
+
+// ═══ 清除缓存确认弹窗 ═══
+.clear-cache-confirm {
+  text-align: center;
+  padding: var(--spacing-lg);
+
+  .warning-icon {
+    font-size: 48px;
+    color: var(--color-warning);
+    margin-bottom: var(--spacing-md);
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-primary);
+
+    &.hint {
+      margin-top: var(--spacing-sm);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
   }
 }
 </style>

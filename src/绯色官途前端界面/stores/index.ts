@@ -14,6 +14,15 @@ export { useLocalCache } from './useLocalCache';
 // 全局角色抽屉状态
 export { useCharacterDrawer } from './useCharacterDrawer';
 
+// MVU设置 Store
+export {
+  useMvuSettings,
+  SCARLET_MVU_EVENTS,
+  type MvuSettings,
+  type ApiConfig,
+  type PendingUpdateData,
+} from './useMvuSettings';
+
 // 旧版 Store（保留兼容性，建议使用 useGameData）
 export { useGameStore } from './game';
 

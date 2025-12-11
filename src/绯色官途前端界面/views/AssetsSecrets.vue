@@ -79,8 +79,12 @@
                 <span class="item-value">{{ formatMoney(item.代持金额) }}</span>
               </div>
               <div class="item-details">
-                <span v-if="item.代持内容 && item.代持内容 !== '无'"><i class="fas fa-briefcase"></i> {{ item.代持内容 }}</span>
-                <span :class="reliabilityClass(item.可靠程度)"><i class="fas fa-shield-halved"></i> {{ item.可靠程度 }}</span>
+                <span v-if="item.代持内容 && item.代持内容 !== '无'"
+                  ><i class="fas fa-briefcase"></i> {{ item.代持内容 }}</span
+                >
+                <span :class="reliabilityClass(item.可靠程度)"
+                  ><i class="fas fa-shield-halved"></i> {{ item.可靠程度 }}</span
+                >
               </div>
             </div>
             <p v-if="!Object.keys(个人资产.白手套).length" class="empty-hint">暂无白手套</p>
@@ -112,7 +116,11 @@
                 :class="{ completed: item.isHidden }"
               >
                 <label class="todo-checkbox">
-                  <input type="checkbox" :checked="item.isHidden" @change="toggleHandle('被握把柄', item.key, item.data, item.isHidden)" />
+                  <input
+                    type="checkbox"
+                    :checked="item.isHidden"
+                    @change="toggleHandle('被握把柄', item.key, item.data, item.isHidden)"
+                  />
                   <span class="checkmark"></span>
                 </label>
                 <div class="todo-content">
@@ -139,7 +147,11 @@
                 :class="{ completed: item.isHidden }"
               >
                 <label class="todo-checkbox">
-                  <input type="checkbox" :checked="item.isHidden" @change="toggleHandle('手握把柄', item.key, item.data, item.isHidden)" />
+                  <input
+                    type="checkbox"
+                    :checked="item.isHidden"
+                    @change="toggleHandle('手握把柄', item.key, item.data, item.isHidden)"
+                  />
                   <span class="checkmark"></span>
                 </label>
                 <div class="todo-content">
@@ -175,7 +187,11 @@
               :class="{ completed: item.isHidden }"
             >
               <label class="todo-checkbox">
-                <input type="checkbox" :checked="item.isHidden" @change="minesTodo.toggleItem(item.key, item.data, item.isHidden)" />
+                <input
+                  type="checkbox"
+                  :checked="item.isHidden"
+                  @change="minesTodo.toggleItem(item.key, item.data, item.isHidden)"
+                />
                 <span class="checkmark"></span>
               </label>
               <div class="todo-content">
@@ -212,13 +228,19 @@
               :class="{ completed: item.isHidden }"
             >
               <label class="todo-checkbox">
-                <input type="checkbox" :checked="item.isHidden" @change="debtsTodo.toggleItem(item.key, item.data, item.isHidden)" />
+                <input
+                  type="checkbox"
+                  :checked="item.isHidden"
+                  @change="debtsTodo.toggleItem(item.key, item.data, item.isHidden)"
+                />
                 <span class="checkmark"></span>
               </label>
               <div class="todo-content">
                 <div class="todo-main">
                   <span class="todo-title">{{ item.key }}</span>
-                  <span class="pressure-badge" :class="pressureClass(item.data.偿还压力)">{{ item.data.偿还压力 }}</span>
+                  <span class="pressure-badge" :class="pressureClass(item.data.偿还压力)">{{
+                    item.data.偿还压力
+                  }}</span>
                 </div>
                 <p class="todo-desc">{{ item.data.欠债内容 }}</p>
                 <div class="todo-meta">
@@ -237,9 +259,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useGameData } from '../stores/useGameData';
 import { CharacterName } from '../components/common';
-import { useTodoList, useGroupedTodoList } from '../composables/useTodoList';
+import { useGroupedTodoList, useTodoList } from '../composables/useTodoList';
+import { useGameData } from '../stores/useGameData';
 
 const gameData = useGameData();
 const 个人资产 = computed(() => gameData.个人资产);
@@ -249,26 +271,33 @@ const 暗账 = computed(() => gameData.暗账);
 const handleView = ref<'all' | 'held' | 'holding'>('all');
 
 // 类型定义
-type 被握把柄类型 = typeof 暗账.value.被握把柄[string];
-type 手握把柄类型 = typeof 暗账.value.手握把柄[string];
-type 政治地雷类型 = typeof 暗账.value.政治地雷[string];
-type 人情债类型 = typeof 暗账.value.人情债[string];
+type 被握把柄类型 = (typeof 暗账.value.被握把柄)[string];
+type 手握把柄类型 = (typeof 暗账.value.手握把柄)[string];
+type 政治地雷类型 = (typeof 暗账.value.政治地雷)[string];
+type 人情债类型 = (typeof 暗账.value.人情债)[string];
 
 // ═══ 把柄使用分组 TodoList ═══
 const handlesTodoList = useGroupedTodoList<被握把柄类型 | 手握把柄类型>({
-  cacheKey: 'scarlet_hidden_handles_v3',
   groups: [
     {
       type: '被握把柄',
       getActiveItems: () => 暗账.value.被握把柄 as Record<string, 被握把柄类型 | 手握把柄类型>,
-      deleteActiveItem: (key) => { delete gameData.rawData.暗账.被握把柄[key]; },
-      restoreActiveItem: (key, data) => { gameData.rawData.暗账.被握把柄[key] = data as 被握把柄类型; },
+      deleteActiveItem: key => {
+        delete gameData.rawData.暗账.被握把柄[key];
+      },
+      restoreActiveItem: (key, data) => {
+        gameData.rawData.暗账.被握把柄[key] = data as 被握把柄类型;
+      },
     },
     {
       type: '手握把柄',
       getActiveItems: () => 暗账.value.手握把柄 as Record<string, 被握把柄类型 | 手握把柄类型>,
-      deleteActiveItem: (key) => { delete gameData.rawData.暗账.手握把柄[key]; },
-      restoreActiveItem: (key, data) => { gameData.rawData.暗账.手握把柄[key] = data as 手握把柄类型; },
+      deleteActiveItem: key => {
+        delete gameData.rawData.暗账.手握把柄[key];
+      },
+      restoreActiveItem: (key, data) => {
+        gameData.rawData.暗账.手握把柄[key] = data as 手握把柄类型;
+      },
     },
   ],
   saveToBackend: () => gameData.saveSection('暗账'),
@@ -293,19 +322,25 @@ const filteredHandlesEmpty = computed(() => {
 
 // ═══ 政治地雷 TodoList ═══
 const minesTodo = useTodoList<政治地雷类型>({
-  cacheKey: 'scarlet_hidden_mines_v3',
   getActiveItems: () => 暗账.value.政治地雷,
-  deleteActiveItem: (key) => { delete gameData.rawData.暗账.政治地雷[key]; },
-  restoreActiveItem: (key, data) => { gameData.rawData.暗账.政治地雷[key] = data; },
+  deleteActiveItem: key => {
+    delete gameData.rawData.暗账.政治地雷[key];
+  },
+  restoreActiveItem: (key, data) => {
+    gameData.rawData.暗账.政治地雷[key] = data;
+  },
   saveToBackend: () => gameData.saveSection('暗账'),
 });
 
 // ═══ 人情债 TodoList ═══
 const debtsTodo = useTodoList<人情债类型>({
-  cacheKey: 'scarlet_hidden_debts_v3',
   getActiveItems: () => 暗账.value.人情债,
-  deleteActiveItem: (key) => { delete gameData.rawData.暗账.人情债[key]; },
-  restoreActiveItem: (key, data) => { gameData.rawData.暗账.人情债[key] = data; },
+  deleteActiveItem: key => {
+    delete gameData.rawData.暗账.人情债[key];
+  },
+  restoreActiveItem: (key, data) => {
+    gameData.rawData.暗账.人情债[key] = data;
+  },
   saveToBackend: () => gameData.saveSection('暗账'),
 });
 
@@ -401,7 +436,9 @@ function pressureClass(pressure: string) {
 
   &.danger {
     border-color: rgba(255, 107, 107, 0.3);
-    .ov-value { color: var(--color-danger); }
+    .ov-value {
+      color: var(--color-danger);
+    }
   }
 }
 
@@ -423,11 +460,41 @@ function pressureClass(pressure: string) {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
 
-  &.danger-section { border-color: rgba(255, 107, 107, 0.3); }
-  &.handles-section { border-color: rgba(216, 166, 87, 0.3); }
-  &.mines-section { border-color: rgba(224, 195, 108, 0.3); }
-  &.debts-section { border-color: rgba(122, 162, 247, 0.3); }
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    border-color: var(--color-border-light);
+  }
+
+  &.danger-section {
+    border-color: rgba(255, 107, 107, 0.3);
+    &:hover {
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.15);
+    }
+  }
+  &.handles-section {
+    border-color: rgba(216, 166, 87, 0.3);
+    &:hover {
+      box-shadow: 0 6px 20px rgba(216, 166, 87, 0.15);
+    }
+  }
+  &.mines-section {
+    border-color: rgba(224, 195, 108, 0.3);
+    &:hover {
+      box-shadow: 0 6px 20px rgba(224, 195, 108, 0.15);
+    }
+  }
+  &.debts-section {
+    border-color: rgba(122, 162, 247, 0.3);
+    &:hover {
+      box-shadow: 0 6px 20px rgba(122, 162, 247, 0.15);
+    }
+  }
 }
 
 .section-header {
@@ -447,10 +514,18 @@ function pressureClass(pressure: string) {
     font-size: 11px;
   }
 
-  .danger-section & i { color: var(--color-danger); }
-  .handles-section & i { color: var(--color-gold); }
-  .mines-section & i { color: var(--color-warning); }
-  .debts-section & i { color: var(--color-info); }
+  .danger-section & i {
+    color: var(--color-danger);
+  }
+  .handles-section & i {
+    color: var(--color-gold);
+  }
+  .mines-section & i {
+    color: var(--color-warning);
+  }
+  .debts-section & i {
+    color: var(--color-info);
+  }
 
   .count {
     color: var(--color-text-muted);
@@ -471,7 +546,9 @@ function pressureClass(pressure: string) {
     color: var(--color-text-muted);
     transition: all var(--transition-fast);
 
-    &:hover { color: var(--color-text-secondary); }
+    &:hover {
+      color: var(--color-text-secondary);
+    }
     &.active {
       background: var(--color-gold);
       color: var(--color-bg-dark);
@@ -493,6 +570,14 @@ function pressureClass(pressure: string) {
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--color-bg-elevated);
   border-radius: var(--radius-sm);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateX(2px);
+  }
 }
 
 .item-main {
@@ -531,10 +616,18 @@ function pressureClass(pressure: string) {
     font-size: 9px;
   }
 
-  .safe { color: var(--color-success); }
-  .ok { color: var(--color-info); }
-  .warn { color: var(--color-warning); }
-  .danger { color: var(--color-danger); }
+  .safe {
+    color: var(--color-success);
+  }
+  .ok {
+    color: var(--color-info);
+  }
+  .warn {
+    color: var(--color-warning);
+  }
+  .danger {
+    color: var(--color-danger);
+  }
 }
 
 // ═══ Todo List 样式 ═══
@@ -554,14 +647,40 @@ function pressureClass(pressure: string) {
   border-left: 3px solid var(--color-border);
   transition: all var(--transition-fast);
 
-  &.held { border-left-color: var(--color-danger); }
-  &.holding { border-left-color: var(--color-success); }
-  &.mine { border-left-color: var(--color-warning); }
-  &.debt { border-left-color: var(--color-info); }
+  &:hover:not(.completed) {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateX(2px);
+  }
+
+  &.held {
+    border-left-color: var(--color-danger);
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.15);
+    }
+  }
+  &.holding {
+    border-left-color: var(--color-success);
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(74, 193, 142, 0.15);
+    }
+  }
+  &.mine {
+    border-left-color: var(--color-warning);
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(224, 195, 108, 0.15);
+    }
+  }
+  &.debt {
+    border-left-color: var(--color-info);
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.15);
+    }
+  }
 
   &.completed {
     opacity: 0.5;
-    .todo-title, .todo-desc {
+    .todo-title,
+    .todo-desc {
       text-decoration: line-through;
       color: var(--color-text-muted);
     }
@@ -611,7 +730,9 @@ function pressureClass(pressure: string) {
     border-color: var(--color-success);
     background: rgba(74, 193, 142, 0.1);
 
-    &::after { display: block; }
+    &::after {
+      display: block;
+    }
   }
 
   &:hover .checkmark {
@@ -657,7 +778,10 @@ function pressureClass(pressure: string) {
   flex: 1;
 }
 
-.risk-badge, .usage-badge, .mine-type, .pressure-badge {
+.risk-badge,
+.usage-badge,
+.mine-type,
+.pressure-badge {
   padding: 1px 5px;
   font-size: 9px;
   font-weight: 600;
@@ -703,10 +827,16 @@ function pressureClass(pressure: string) {
   font-size: 10px;
   color: var(--color-text-muted);
 
-  i { margin-right: 2px; }
+  i {
+    margin-right: 2px;
+  }
 
-  .fatal { color: var(--color-danger); }
-  .serious { color: var(--color-warning); }
+  .fatal {
+    color: var(--color-danger);
+  }
+  .serious {
+    color: var(--color-warning);
+  }
 }
 
 .trigger-badge {
@@ -717,7 +847,9 @@ function pressureClass(pressure: string) {
   font-size: 10px;
   color: var(--color-warning);
 
-  i { margin-right: 4px; }
+  i {
+    margin-right: 4px;
+  }
 }
 
 // ═══ 空状态 ═══

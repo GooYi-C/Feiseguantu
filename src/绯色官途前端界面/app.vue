@@ -25,8 +25,8 @@
       <header class="app-header">
         <div class="header-left">
           <h1 class="app-title">
-            <span class="title-text">绯色官途</span>
-            <span v-if="政治气候 !== '无'" class="title-badge">{{ 政治气候 }}</span>
+            <span v-if="政治气候 !== '无'" class="title-text">{{ 政治气候 }}</span>
+            <span v-else class="title-text">狂飙年代</span>
           </h1>
         </div>
         <div v-if="时空舆情.当前日期.年" class="header-center">
@@ -49,13 +49,25 @@
             <span class="player-name">{{ 个人档案.基本信息.姓名 }}</span>
             <span class="player-rank">{{ 个人档案.现任职务.级别 || '待定' }}</span>
           </span>
-          <span v-if="人物总数 > 0" class="char-count">
+          <router-link v-if="人物总数 > 0" to="/characters" class="char-count clickable">
             <i class="fas fa-users"></i>
             {{ 人物总数 }}
-          </span>
-          <button class="refresh-btn" :disabled="loading" aria-label="刷新" @click="refreshData">
-            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+          </router-link>
+          <!-- MVU重试解析按钮 (解析中显示红色停止图标，否则显示金色刷新图标) -->
+          <button
+            class="mvu-retry-btn"
+            :class="{ parsing: mvuSettings.isParsingInProgress }"
+            :title="mvuRetryButtonTitle"
+            aria-label="重试变量解析"
+            @click="handleMvuRetry"
+          >
+            <i v-if="mvuSettings.isParsingInProgress" class="fas fa-stop-circle abort-icon"></i>
+            <i v-else class="fas fa-sync-alt"></i>
           </button>
+          <!-- 设置按钮 -->
+          <router-link to="/settings" class="settings-btn" title="设置">
+            <i class="fas fa-cog"></i>
+          </router-link>
         </div>
       </header>
 
@@ -79,20 +91,21 @@
         <i class="fas fa-exclamation-circle"></i>
         <span>您有未保存的更改</span>
         <div class="dirty-actions">
-          <button class="btn-discard" @click="discardChanges">
-            <i class="fas fa-undo"></i> 放弃
-          </button>
-          <button class="btn-save" @click="saveAll">
-            <i class="fas fa-save"></i> 保存
-          </button>
+          <button class="btn-discard" @click="discardChanges"><i class="fas fa-undo"></i> 放弃</button>
+          <button class="btn-save" @click="saveAll"><i class="fas fa-save"></i> 保存</button>
         </div>
       </div>
     </Transition>
 
     <!-- 全局角色抽屉 -->
-    <CharacterDrawer
-      v-model="characterDrawerOpen"
-      :character-name="currentCharacterName"
+    <CharacterDrawer v-model="characterDrawerOpen" :character-name="currentCharacterName" />
+
+    <!-- MVU确认弹窗 -->
+    <MvuConfirmDialog
+      v-model="mvuSettings.showConfirmDialog"
+      :pending-data="mvuSettings.pendingUpdate"
+      @confirm="handleMvuConfirm"
+      @cancel="handleMvuCancel"
     />
   </div>
 </template>
@@ -100,13 +113,15 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { routes } from './router';
-import { useGameData, useCharacterDrawer } from './stores';
 import { CharacterDrawer } from './components/character';
+import { MvuConfirmDialog } from './components/mvu';
+import { routes } from './router';
+import { useCharacterDrawer, useGameData, useMvuSettings } from './stores';
 
 const route = useRoute();
 const gameData = useGameData();
 const characterDrawerStore = useCharacterDrawer();
+const mvuSettings = useMvuSettings();
 
 const loading = computed(() => gameData.loading);
 const initialized = computed(() => gameData.initialized);
@@ -125,6 +140,14 @@ const 时空舆情 = computed(() => gameData.时空舆情);
 const 个人档案 = computed(() => gameData.个人档案);
 const 政治气候 = computed(() => 时空舆情.value.政治气候);
 const 人物总数 = computed(() => gameData.人物总数);
+
+// MVU按钮提示文本
+const mvuRetryButtonTitle = computed(() => {
+  if (mvuSettings.isParsingInProgress) {
+    return `点击中断解析 (${mvuSettings.parsingProgress || '解析中...'})`;
+  }
+  return '重试额外模型解析';
+});
 
 const navRoutes = routes;
 const currentRoute = computed(() => routes.find(r => r.path === route.path));
@@ -162,10 +185,6 @@ function isActive(path: string) {
   return route.path === path;
 }
 
-async function refreshData() {
-  await gameData.loadData();
-}
-
 async function saveAll() {
   await gameData.saveData();
 }
@@ -174,9 +193,26 @@ async function discardChanges() {
   await gameData.discardChanges();
 }
 
+// MVU重试解析
+function handleMvuRetry() {
+  mvuSettings.retryParsing();
+}
+
+// MVU确认更新
+function handleMvuConfirm(updateBlock: string) {
+  mvuSettings.confirmUpdate(true, updateBlock);
+}
+
+// MVU取消更新
+function handleMvuCancel() {
+  mvuSettings.confirmUpdate(false);
+}
+
 onMounted(async () => {
   await gameData.loadData();
   gameData.setupEventListeners();
+  // 初始化MVU设置
+  await mvuSettings.initialize();
 });
 </script>
 
@@ -340,15 +376,6 @@ onMounted(async () => {
   background-clip: text;
 }
 
-.title-badge {
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  background: rgba(196, 30, 58, 0.2);
-  color: var(--color-romance);
-  border-radius: var(--radius-sm);
-}
-
 .header-center {
   display: flex;
   align-items: center;
@@ -398,13 +425,77 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   background: var(--color-bg-elevated);
   border-radius: var(--radius-full);
+  text-decoration: none;
+  transition: all var(--transition-fast);
 
   i {
     color: var(--color-gold);
   }
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-bg-card);
+      color: var(--color-text-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
 }
 
-.refresh-btn {
+// ═══ MVU重试解析按钮 ═══
+.mvu-retry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-md);
+  color: var(--color-gold);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(216, 166, 87, 0.15);
+    transform: scale(1.05);
+  }
+
+  // 解析中状态 - 红色停止图标 + 脉冲动画
+  &.parsing {
+    border-color: var(--color-danger);
+    background: rgba(255, 107, 107, 0.15);
+    cursor: pointer; // 可以点击中断
+
+    .abort-icon {
+      color: var(--color-danger);
+      animation: pulse-abort 1s ease-in-out infinite;
+    }
+
+    &:hover {
+      background: rgba(255, 107, 107, 0.25);
+      transform: scale(1.05);
+    }
+  }
+}
+
+// 中止按钮脉冲动画
+@keyframes pulse-abort {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+// ═══ 设置按钮 ═══
+.settings-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,16 +505,21 @@ onMounted(async () => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
+  text-decoration: none;
   transition: all var(--transition-fast);
 
-  &:hover:not(:disabled) {
+  &:hover {
     background: var(--color-bg-elevated);
     color: var(--color-text-primary);
+    border-color: var(--color-text-muted);
+
+    i {
+      transform: rotate(90deg);
+    }
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  i {
+    transition: transform var(--transition-normal);
   }
 }
 

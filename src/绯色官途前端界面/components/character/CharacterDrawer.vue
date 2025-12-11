@@ -6,7 +6,7 @@
           <template v-if="character">
             <!-- 头部 -->
             <div class="drawer-header">
-              <label class="header-avatar" :class="genderClass" title="点击上传头像">
+              <div class="header-avatar" :class="genderClass" title="点击上传头像" @click="showAvatarUploader = true">
                 <img v-if="avatar" :src="avatar" alt="" />
                 <i v-else class="fas fa-user-tie"></i>
                 <span class="gender-badge" :class="genderClass">
@@ -15,8 +15,7 @@
                 <div class="avatar-upload-overlay">
                   <i class="fas fa-camera"></i>
                 </div>
-                <input type="file" accept="image/*" hidden @change="handleAvatarUpload" />
-              </label>
+              </div>
               <div class="header-info">
                 <h3 class="char-name">{{ characterName }}</h3>
                 <span v-if="character.职务 !== '无'" class="char-title">{{ character.职务 }}</span>
@@ -239,6 +238,28 @@
     danger
     @confirm="confirmDelete"
   />
+
+  <!-- 头像上传弹窗 -->
+  <Teleport to="body">
+    <div v-if="showAvatarUploader" class="avatar-uploader-modal" @click.self="showAvatarUploader = false">
+      <div class="uploader-dialog">
+        <div class="uploader-header">
+          <h3><i class="fas fa-user-circle"></i> 上传角色头像</h3>
+          <button class="close-btn" @click="showAvatarUploader = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="uploader-body">
+          <ImageUploader
+            :default-output-size="200"
+            default-shape="circle"
+            :max-size="500"
+            @upload="handleAvatarUpload"
+          />
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -246,7 +267,7 @@ import { klona } from 'klona';
 import { computed, ref, watch } from 'vue';
 import { useCharacters, useGameData, useLocalCache } from '../../stores';
 import type { 人物 } from '../../stores/schema';
-import { ConfirmDialog } from '../common';
+import { ConfirmDialog, ImageUploader } from '../common';
 import CharacterForm from './CharacterForm.vue';
 
 // ═══ Props & Emits ═══
@@ -278,6 +299,7 @@ const editData = ref<Partial<人物>>({});
 const originalEditData = ref<string>(''); // 用于比较是否有变化
 const formRef = ref<InstanceType<typeof CharacterForm> | null>(null);
 const showDeleteConfirm = ref(false);
+const showAvatarUploader = ref(false);
 
 // ═══ 计算属性 ═══
 const character = computed(() => characters.getCharacter(props.characterName));
@@ -484,25 +506,10 @@ async function saveEdit() {
 }
 
 // ═══ 头像上传 ═══
-function handleAvatarUpload(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-
-  if (file.size > 4 * 1024 * 1024) {
-    toastr.warning('图片大小不能超过 4MB');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    localCache.setAvatar(props.characterName, reader.result as string);
+function handleAvatarUpload(dataUrl: string) {
+  localCache.setAvatar(props.characterName, dataUrl);
+  showAvatarUploader.value = false;
     toastr.success('头像已更新');
-  };
-  reader.readAsDataURL(file);
-
-  // 清空 input 以便重复选择同一文件
-  input.value = '';
 }
 
 // ═══ 删除功能 ═══
@@ -577,13 +584,13 @@ watch(isOpen, val => {
 
 .header-avatar {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-bg-elevated);
-  border-radius: var(--radius-lg);
+  border-radius: 50%; // 圆形显示，与裁剪形状一致
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
@@ -615,6 +622,7 @@ watch(isOpen, val => {
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
     opacity: 0;
     transition: opacity 0.2s ease;
 
@@ -1033,6 +1041,68 @@ watch(isOpen, val => {
 
   .drawer-container {
     transform: translateX(100%);
+  }
+}
+
+// ═══ 头像上传弹窗 ═══
+.avatar-uploader-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 10000; // 需要高于 drawer
+
+  .uploader-dialog {
+    width: 460px;
+    max-width: 95vw;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .uploader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0;
+
+      i { color: var(--color-gold); }
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+
+      &:hover {
+        background: var(--color-bg-elevated);
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  .uploader-body {
+    padding: var(--spacing-lg);
   }
 }
 </style>

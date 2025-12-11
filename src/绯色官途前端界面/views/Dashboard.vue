@@ -3,54 +3,53 @@
     <!-- 第一行：时空舆情 + 当前场景 -->
     <div class="row-1">
       <!-- 时空舆情卡（可滚动，无纵向间距） -->
-    <section class="card time-card">
+      <section class="card time-card">
         <div class="card-header compact">
-        <h2><i class="fas fa-globe"></i> 时空舆情</h2>
-        <span class="climate-badge" :class="climateClass">{{ 时空舆情.政治气候 }}</span>
-      </div>
+          <h2><i class="fas fa-globe"></i> 时空舆情</h2>
+        </div>
         <div class="card-body compact scrollable">
           <div class="info-list compact">
-            <div v-if="时空舆情.重大事件 !== '无'" class="info-row event">
+            <div v-if="时空舆情.重大事件 !== '无'" class="info-row event" title="重大事件">
               <i class="fas fa-bolt"></i>
               <span>{{ 时空舆情.重大事件 }}</span>
-          </div>
-            <div v-if="时空舆情.中央动态 !== '无'" class="info-row central">
+            </div>
+            <div v-if="时空舆情.中央动态 !== '无'" class="info-row central" title="中央动态">
               <i class="fas fa-landmark"></i>
               <span>{{ 时空舆情.中央动态 }}</span>
-          </div>
-            <div v-if="时空舆情.省内风向 !== '无'" class="info-row province">
+            </div>
+            <div v-if="时空舆情.省内风向 !== '无'" class="info-row province" title="省内风气">
               <i class="fas fa-building"></i>
               <span>{{ 时空舆情.省内风向 }}</span>
-          </div>
-            <div v-if="时空舆情.本地新闻 !== '无'" class="info-row local">
+            </div>
+            <div v-if="时空舆情.本地新闻 !== '无'" class="info-row local" title="本地新闻">
               <i class="fas fa-newspaper"></i>
               <span>{{ 时空舆情.本地新闻 }}</span>
-          </div>
-            <div v-if="时空舆情.圈内传闻 !== '无'" class="info-row rumor">
+            </div>
+            <div v-if="时空舆情.圈内传闻 !== '无'" class="info-row rumor" title="圈内传闻">
               <i class="fas fa-comment-dots"></i>
               <span>{{ 时空舆情.圈内传闻 }}</span>
-          </div>
-            <div v-if="时空舆情.个人风评 !== '无'" class="info-row reputation">
+            </div>
+            <div v-if="时空舆情.个人风评 !== '无'" class="info-row reputation" title="个人风评">
               <i class="fas fa-user-tag"></i>
               <span>{{ 时空舆情.个人风评 }}</span>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
       <!-- 当前场景（可滚动） -->
-    <section v-if="当前场景.场景类型 !== '无'" class="card scene-card">
+      <section v-if="当前场景.场景类型 !== '无'" class="card scene-card">
         <div class="card-header compact">
-        <h2><i class="fas fa-map-location-dot"></i> 当前场景</h2>
-        <span class="scene-type">{{ 当前场景.场景类型 }}</span>
-      </div>
+          <h2><i class="fas fa-map-location-dot"></i> 当前场景</h2>
+          <span class="scene-type">{{ 当前场景.场景类型 }}</span>
+        </div>
         <div class="card-body compact scrollable">
-        <p v-if="当前场景.场景速写 !== '无'" class="scene-desc">{{ 当前场景.场景速写 }}</p>
+          <p v-if="当前场景.场景速写 !== '无'" class="scene-desc">{{ 当前场景.场景速写 }}</p>
           <div class="scene-row">
             <span v-if="当前场景.气氛基调 !== '无'" class="mood-badge">
-            <i class="fas fa-theater-masks"></i> {{ 当前场景.气氛基调 }}
-          </span>
-          <div v-if="当前场景.在场人物.length" class="present-chars">
+              <i class="fas fa-theater-masks"></i> {{ 当前场景.气氛基调 }}
+            </span>
+            <div v-if="当前场景.在场人物.length" class="present-chars">
               <CharacterName v-for="char in 当前场景.在场人物" :key="char" :name="char" />
             </div>
           </div>
@@ -71,43 +70,43 @@
         <div class="card-body compact stat-body">
           <div class="stat-list">
             <div class="stat-item" @click="$router.push('/characters')">
-        <div class="stat-icon"><i class="fas fa-users"></i></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ 人物总数 }}</span>
-          <span class="stat-label">人物库</span>
-        </div>
-      </div>
+              <div class="stat-icon"><i class="fas fa-users"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ 人物总数 }}</span>
+                <span class="stat-label">人物库</span>
+              </div>
+            </div>
             <div class="stat-item romance" @click="$router.push('/romance')">
-        <div class="stat-icon"><i class="fas fa-heart"></i></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ 绯色对象列表.length }}</span>
-          <span class="stat-label">绯色对象</span>
-        </div>
-      </div>
+              <div class="stat-icon"><i class="fas fa-heart"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ 绯色对象列表.length }}</span>
+                <span class="stat-label">绯色对象</span>
+              </div>
+            </div>
             <div class="stat-item danger" @click="$router.push('/opportunities')">
-        <div class="stat-icon"><i class="fas fa-bomb"></i></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ 危机数量 }}</span>
-          <span class="stat-label">潜在危机</span>
-        </div>
-      </div>
+              <div class="stat-icon"><i class="fas fa-bomb"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ 危机数量 }}</span>
+                <span class="stat-label">潜在危机</span>
+              </div>
+            </div>
             <div class="stat-item success" @click="$router.push('/opportunities')">
-        <div class="stat-icon"><i class="fas fa-star"></i></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ 机遇数量 }}</span>
-          <span class="stat-label">当前机遇</span>
-        </div>
-      </div>
-    </div>
+              <div class="stat-icon"><i class="fas fa-star"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ 机遇数量 }}</span>
+                <span class="stat-label">当前机遇</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- 待办事项（可交互Todo List，真正删除/恢复变量） -->
       <section class="card todo-card">
         <div class="card-header compact">
-        <h2><i class="fas fa-clipboard-list"></i> 待办事项</h2>
+          <h2><i class="fas fa-clipboard-list"></i> 待办事项</h2>
           <span class="count-badge">{{ 活跃待办数量 }} / {{ 全部待办数量 }}</span>
-      </div>
+        </div>
         <div class="card-body compact todo-body">
           <div class="todo-list">
             <div
@@ -125,14 +124,14 @@
                 <span class="checkmark"></span>
               </label>
               <div class="todo-content">
-            <div class="todo-main">
+                <div class="todo-main">
                   <span class="todo-urgency">{{ item.todo.紧急程度 }}</span>
                   <span class="todo-text">{{ item.todo.事项 }}</span>
-            </div>
-            <div class="todo-meta">
+                </div>
+                <div class="todo-meta">
                   <span v-if="item.todo.截止时间 !== '无'" class="deadline">
                     <i class="far fa-clock"></i> {{ item.todo.截止时间 }}
-              </span>
+                  </span>
                   <CharacterName v-for="char in item.todo.关联人物.slice(0, 2)" :key="char" :name="char" />
                   <span v-if="item.todo.关联人物.length > 2" class="more-chars"
                     >+{{ item.todo.关联人物.length - 2 }}</span
@@ -142,72 +141,55 @@
             </div>
           </div>
           <div v-if="全部待办数量 === 0" class="empty-hint">暂无待办事项</div>
-      </div>
-    </section>
+        </div>
+      </section>
 
       <!-- 关系索引 -->
-    <section class="card relations-card">
+      <section class="card relations-card">
         <div class="card-header compact">
-        <h2><i class="fas fa-diagram-project"></i> 关系索引</h2>
+          <h2><i class="fas fa-diagram-project"></i> 关系索引</h2>
           <router-link to="/characters" class="more-link">查看 <i class="fas fa-arrow-right"></i></router-link>
-      </div>
+        </div>
         <div class="card-body compact relations-body">
           <div class="relation-row">
-            <div v-if="关系索引.一把手 !== '无'" class="relation-chip boss">
-              <i class="fas fa-crown"></i>
-              <span class="rel-label">一把手</span>
-              <CharacterName :name="关系索引.一把手" />
-            </div>
-            <div v-if="关系索引.直接上级 !== '无'" class="relation-chip superior">
-              <i class="fas fa-user-tie"></i>
-              <span class="rel-label">直接上级</span>
-              <CharacterName :name="关系索引.直接上级" />
-            </div>
-            <div v-if="关系索引.配偶 !== '无'" class="relation-chip spouse">
-              <i class="fas fa-ring"></i>
-              <span class="rel-label">配偶</span>
-              <CharacterName :name="关系索引.配偶" />
-            </div>
-          </div>
-          <div class="relation-row">
-            <div v-if="关系索引.靠山列表.length" class="relation-group patron">
-              <span class="group-label"><i class="fas fa-shield-halved"></i> 靠山</span>
-              <div class="group-tags">
-              <CharacterName v-for="p in 关系索引.靠山列表" :key="p" :name="p" />
-            </div>
-          </div>
-            <div v-if="关系索引.绯色对象列表.length" class="relation-group romance">
-              <span class="group-label"><i class="fas fa-heart"></i> 绯色对象</span>
-              <div class="group-tags">
-              <CharacterName v-for="p in 关系索引.绯色对象列表" :key="p" :name="p" />
+            <!-- 动态渲染所有字段 -->
+            <template v-for="field in 动态关系字段" :key="field.key">
+              <!-- 单值字段 -->
+              <div
+                v-if="field.isSingle && field.value !== '无'"
+                class="relation-chip"
+                :class="{ extended: field.isExtended }"
+                :style="{ '--field-color': field.color }"
+              >
+                <span class="rel-label">{{ field.displayName }}</span>
+                <CharacterName :name="field.value" />
               </div>
-            </div>
-          </div>
-          <div class="relation-row">
-            <div v-if="关系索引.竞争对手列表.length" class="relation-group rival">
-              <span class="group-label"><i class="fas fa-chess"></i> 竞争对手</span>
-              <div class="group-tags">
-              <CharacterName v-for="p in 关系索引.竞争对手列表" :key="p" :name="p" />
-            </div>
-          </div>
-            <div v-if="关系索引.政治宿敌列表.length" class="relation-group enemy">
-              <span class="group-label"><i class="fas fa-skull"></i> 政治宿敌</span>
-              <div class="group-tags">
-              <CharacterName v-for="p in 关系索引.政治宿敌列表" :key="p" :name="p" />
+
+              <!-- 数组字段 -->
+              <div
+                v-else-if="!field.isSingle && field.value.length"
+                class="relation-group"
+                :class="{ extended: field.isExtended }"
+                :style="{ '--field-color': field.color }"
+              >
+                <span class="group-label">{{ field.displayName }}</span>
+                <div class="group-tags">
+                  <CharacterName v-for="name in field.value" :key="name" :name="name" />
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </section>
-      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { CharacterName } from '../components/common';
-import { useGameData } from '../stores/useGameData';
 import { useTodoList } from '../composables/useTodoList';
+import { useGameData } from '../stores/useGameData';
 
 // 待办事项类型定义
 interface 待办事项类型 {
@@ -227,11 +209,158 @@ const 绯色对象列表 = computed(() => gameData.绯色对象列表);
 const 危机数量 = computed(() => gameData.危机数量);
 const 机遇数量 = computed(() => gameData.机遇数量);
 
+// ═══ 动态关系字段处理 ═══
+
+/**
+ * 高对比度颜色池 - 基于HSL色彩模型设计
+ *
+ * 设计原则：
+ * - 色相差异至少60度，确保视觉区分度
+ * - 明度保持在45-60%，适配深色背景
+ * - 饱和度保持65-80%，平衡鲜艳度与可读性
+ * - 参考Material Design和Tailwind CSS配色标准
+ * - 考虑色盲用户的识别需求
+ *
+ * 颜色分组：
+ * - 层级类（金、紫）：表示权力关系
+ * - 情感类（红、粉、橙粉）：表示情感关系
+ * - 技术类（蓝、青、绿）：表示业务关系
+ * - 中性类（橙、黄绿、靛蓝）：表示其他关系
+ */
+const FIELD_COLORS = [
+  // 第1组：层级与权力（暖色调）
+  '#f59e0b', // 1. 琥珀金 (HSL: 38°, 92%, 50%) - 明亮的金色，适合"一把手"等高层级
+  '#a855f7', // 2. 紫罗兰 (HSL: 270°, 91%, 65%) - 高贵紫色，适合"直接上级"等
+
+  // 第2组：情感关系（红粉橙色系）
+  '#ef4444', // 3. 鲜红色 (HSL: 0°, 84%, 60%) - 强烈的红色，适合"政治宿敌"
+  '#ec4899', // 4. 玫瑰粉 (HSL: 330°, 81%, 60%) - 浪漫粉色，适合"配偶"
+  '#ff6b9d', // 5. 珊瑚粉 (HSL: 345°, 100%, 71%) - 明亮的橙粉色，适合"绯色对象"（与红色差异大）
+
+  // 第3组：技术与业务（冷色调）
+  '#3b82f6', // 6. 宝石蓝 (HSL: 217°, 91%, 60%) - 经典蓝色，适合"竞争对手"
+  '#06b6d4', // 7. 青绿色 (HSL: 188°, 95%, 42%) - 清新青色，适合"靠山"
+  '#10b981', // 8. 翡翠绿 (HSL: 158°, 84%, 39%) - 生机绿色，适合"核心嫡系"
+
+  // 第4组：中性与特殊（混合色调）
+  '#f97316', // 9. 活力橙 (HSL: 25°, 95%, 53%) - 明亮橙色，与金色区分明显
+  '#84cc16', // 10. 黄绿色 (HSL: 84°, 81%, 44%) - 独特的黄绿，与其他颜色差异大
+  '#6366f1', // 11. 靛蓝色 (HSL: 239°, 84%, 67%) - 深邃靛蓝，与紫色和蓝色都有区别
+  '#14b8a6', // 12. 青碧色 (HSL: 173°, 80%, 40%) - 独特的青色，与绿色和蓝色都不同
+
+  // 第13+组：使用前12个颜色的变体（降低饱和度或调整明度）
+  '#d97706', // 13. 深琥珀 - 第1色的深色版本
+  '#9333ea', // 14. 深紫罗兰 - 第2色的深色版本
+  '#dc2626', // 15. 深红色 - 第3色的深色版本
+];
+
+/**
+ * 常用字段的固定颜色映射
+ * 确保常用字段的颜色稳定，提升用户体验
+ *
+ * 注意：绯色对象使用珊瑚粉(#ff6b9d)，与政治宿敌的鲜红色(#ef4444)形成明显对比
+ */
+const FIXED_FIELD_COLORS: Record<string, number> = {
+  一把手: 0, // 琥珀金 - 最高权力
+  直接上级: 1, // 紫罗兰 - 直接领导
+  配偶: 3, // 玫瑰粉 - 情感关系
+  政治宿敌列表: 2, // 鲜红色 - 敌对关系
+  绯色对象列表: 4, // 珊瑚粉 - 浪漫关系（与红色差异大）
+  竞争对手列表: 5, // 宝石蓝 - 竞争关系
+  靠山列表: 6, // 青绿色 - 支持关系
+  核心嫡系列表: 7, // 翡翠绿 - 核心团队
+};
+
+// 处理字段名：移除末尾的"列表"、"集合"等后缀
+function processFieldName(fieldName: string): string {
+  return fieldName.replace(/(列表|集合|清单|名单|组|队|群)$/g, '');
+}
+
+// 动态获取所有关系字段
+const 动态关系字段 = computed(() => {
+  const fields: Array<{
+    key: string;
+    displayName: string;
+    value: any;
+    isSingle: boolean;
+    color: string;
+    isExtended: boolean; // 是否为第13个及以后的字段
+  }> = [];
+
+  const relationData = 关系索引.value;
+  if (!relationData || typeof relationData !== 'object') {
+    return fields;
+  }
+
+  // 已使用的颜色索引集合
+  const usedColorIndices = new Set<number>();
+
+  // 第一遍：为固定字段分配颜色
+  const fixedFields: Array<[string, any]> = [];
+  const dynamicFields: Array<[string, any]> = [];
+
+  for (const [key, value] of Object.entries(relationData)) {
+    if (value === null || value === undefined) continue;
+
+    if (key in FIXED_FIELD_COLORS) {
+      fixedFields.push([key, value]);
+      usedColorIndices.add(FIXED_FIELD_COLORS[key]);
+    } else {
+      dynamicFields.push([key, value]);
+    }
+  }
+
+  // 处理固定字段
+  for (const [key, value] of fixedFields) {
+    const isSingle = typeof value === 'string';
+    const displayName = processFieldName(key);
+    const colorIndex = FIXED_FIELD_COLORS[key];
+    const color = FIELD_COLORS[colorIndex];
+
+    fields.push({
+      key,
+      displayName,
+      value,
+      isSingle,
+      color,
+      isExtended: false,
+    });
+  }
+
+  // 处理动态字段：使用未被占用的颜色
+  let availableColorIndex = 0;
+  for (const [key, value] of dynamicFields) {
+    // 找到下一个未被使用的颜色索引
+    while (usedColorIndices.has(availableColorIndex) && availableColorIndex < 12) {
+      availableColorIndex++;
+    }
+
+    const isSingle = typeof value === 'string';
+    const displayName = processFieldName(key);
+    const colorIndex = availableColorIndex % FIELD_COLORS.length;
+    const color = FIELD_COLORS[colorIndex];
+    const isExtended = availableColorIndex >= 12;
+
+    fields.push({
+      key,
+      displayName,
+      value,
+      isSingle,
+      color,
+      isExtended,
+    });
+
+    usedColorIndices.add(availableColorIndex);
+    availableColorIndex++;
+  }
+
+  return fields;
+});
+
 // ═══ 待办事项逻辑（使用公共 composable） ═══
 const todoList = useTodoList<待办事项类型>({
-  cacheKey: 'scarlet_hidden_todos_dashboard',
   getActiveItems: () => gameData.机遇与危机.待办事项,
-  deleteActiveItem: (key) => {
+  deleteActiveItem: key => {
     delete gameData.rawData.机遇与危机.待办事项[key];
   },
   restoreActiveItem: (key, data) => {
@@ -268,15 +397,6 @@ async function toggleTodo(key: string, todo: 待办事项类型, isCurrentlyHidd
   await todoList.toggleItem(key, todo, isCurrentlyHidden);
 }
 
-const climateClass = computed(() => {
-  const climate = 时空舆情.value.政治气候;
-  if (climate === '狂飙年代') return 'gold';
-  if (climate === '雷霆震荡') return 'danger';
-  if (climate === '大考淬炼') return 'warning';
-  if (climate === '存量博弈') return 'muted';
-  return '';
-});
-
 function urgencyClass(level: string) {
   if (level === '火烧眉毛') return 'urgent';
   if (level === '尽快处理') return 'high';
@@ -311,7 +431,7 @@ function urgencyClass(level: string) {
   min-height: 0;
 }
 
-// ═══ 通用卡片 ═══
+// ═══ 通用卡片（含hover效果） ═══
 .card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
@@ -320,6 +440,33 @@ function urgencyClass(level: string) {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+
+  // hover 光泽效果
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border-color: var(--color-border-light);
+
+    &::before {
+      opacity: 1;
+    }
+  }
 }
 
 .card-header {
@@ -377,27 +524,6 @@ function urgencyClass(level: string) {
 }
 
 // ═══ 时空舆情卡（无纵向间距） ═══
-.climate-badge {
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: var(--radius-full);
-  background: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
-
-  &.gold {
-    background: rgba(216, 166, 87, 0.2);
-    color: var(--color-gold);
-  }
-  &.danger {
-    background: rgba(255, 107, 107, 0.2);
-    color: var(--color-danger);
-  }
-  &.warning {
-    background: rgba(224, 195, 108, 0.2);
-    color: var(--color-warning);
-  }
-}
 
 .info-list {
   display: flex;
@@ -493,13 +619,13 @@ function urgencyClass(level: string) {
 
 .mood-badge {
   display: inline-flex;
-    align-items: center;
+  align-items: center;
   gap: 4px;
   padding: 2px 8px;
   font-size: 10px;
   background: rgba(255, 77, 109, 0.1);
   border-radius: var(--radius-sm);
-      color: var(--color-romance-light);
+  color: var(--color-romance-light);
 
   i {
     font-size: 10px;
@@ -786,7 +912,7 @@ function urgencyClass(level: string) {
   }
 }
 
-// ═══ 关系索引（放大 label 和 icon，每个颜色不同） ═══
+// ═══ 关系索引（动态颜色，无图标） ═══
 .relations-card {
   min-width: 0;
 }
@@ -811,14 +937,9 @@ function urgencyClass(level: string) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 8px;
-  margin-bottom: 6px;
-
-  &:last-child {
-    margin-bottom: 0;
-}
 }
 
-// 关系 chip - 放大 label 和 icon
+// 关系 chip - 单值字段（无图标，使用动态颜色）
 .relation-chip {
   display: inline-flex;
   align-items: center;
@@ -827,40 +948,32 @@ function urgencyClass(level: string) {
   background: var(--color-bg-elevated);
   border-radius: var(--radius-sm);
   font-size: 11px;
-
-  i {
-    font-size: 11px;
-  }
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
 
   .rel-label {
     font-size: 11px;
     font-weight: 500;
+    color: var(--field-color);
   }
 
-  // 一把手 - 金色
-  &.boss {
-    i,
+  // 第13个及以后的字段：添加边框和降低透明度以示区分
+  &.extended {
+    border-color: var(--field-color);
+    opacity: 0.85;
+
     .rel-label {
-      color: var(--color-gold);
+      opacity: 0.9;
     }
   }
-  // 直接上级 - 紫色
-  &.superior {
-    i,
-    .rel-label {
-      color: #9b59b6;
-    }
-  }
-  // 配偶 - 天蓝色
-  &.spouse {
-    i,
-    .rel-label {
-      color: #00bcd4;
-    }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
   }
 }
 
-// 关系组 - 放大 label 和 icon，每个颜色不同
+// 关系组 - 数组字段（无图标，使用动态颜色）
 .relation-group {
   display: inline-flex;
   align-items: center;
@@ -868,17 +981,13 @@ function urgencyClass(level: string) {
   padding: 4px 8px;
   background: var(--color-bg-elevated);
   border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
 
   .group-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
     font-size: 11px;
     font-weight: 500;
-
-    i {
-      font-size: 11px;
-    }
+    color: var(--field-color);
   }
 
   .group-tags {
@@ -887,33 +996,19 @@ function urgencyClass(level: string) {
     gap: 4px;
   }
 
-  // 靠山 - 橙金色
-  &.patron .group-label {
-    color: #e67e22;
-    i {
-      color: #e67e22;
+  // 第13个及以后的字段：添加边框和降低透明度以示区分
+  &.extended {
+    border-color: var(--field-color);
+    opacity: 0.85;
+
+    .group-label {
+      opacity: 0.9;
     }
   }
-  // 绯色对象 - 绯色
-  &.romance .group-label {
-    color: var(--color-romance-light);
-    i {
-      color: var(--color-romance-light);
-    }
-  }
-  // 竞争对手 - 青色
-  &.rival .group-label {
-    color: #1abc9c;
-    i {
-      color: #1abc9c;
-    }
-  }
-  // 政治宿敌 - 红色
-  &.enemy .group-label {
-    color: var(--color-danger);
-    i {
-      color: var(--color-danger);
-    }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
   }
 }
 
@@ -931,12 +1026,12 @@ function urgencyClass(level: string) {
     &.male {
       background: rgba(74, 144, 217, 0.12) !important;
       color: #5ba0e0 !important;
-  }
+    }
 
     &.female {
       background: rgba(232, 67, 147, 0.12) !important;
       color: #e84393 !important;
-  }
+    }
   }
 
   &:not(.exists) {

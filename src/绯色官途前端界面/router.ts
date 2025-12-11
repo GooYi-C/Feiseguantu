@@ -9,12 +9,14 @@ const Faction = () => import('./views/Faction.vue');
 const AssetsSecrets = () => import('./views/AssetsSecrets.vue');
 const Opportunities = () => import('./views/Opportunities.vue');
 const Variables = () => import('./views/Variables.vue');
+const Settings = () => import('./views/Settings.vue');
 
 // 路由配置 - 按逻辑分类与信息量密度排序
 // 注：scene 路由已移除，其内容将合并到 Dashboard
 // 注：relations 路由已移除，其内容将合并到 Characters（任务 3.3）
 // 注：assets 和 secrets 路由已合并为 assets-secrets（任务 3.1/3.6）
 // 注：variables 移至末尾（高级用户功能）
+// 注：settings 为顶部状态栏独立入口，不在侧边导航栏显示
 export const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -67,9 +69,20 @@ export const routes: RouteRecordRaw[] = [
   },
 ];
 
+// 设置页面（不在侧边栏显示，通过顶部状态栏访问）
+export const settingsRoute: RouteRecordRaw = {
+  path: '/settings',
+  name: 'settings',
+  component: Settings,
+  meta: { title: '设置', icon: 'fa-cog', theme: 'settings' },
+};
+
+// 所有路由（包含设置页面）
+export const allRoutes: RouteRecordRaw[] = [...routes, settingsRoute];
+
 const router = createRouter({
   history: createMemoryHistory(),
-  routes,
+  routes: allRoutes,
 });
 
 export default router;

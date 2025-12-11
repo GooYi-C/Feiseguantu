@@ -3,28 +3,33 @@
     <!-- 紧凑单页布局：我方派系 + 主要派系 -->
     <div class="faction-layout">
       <!-- 左侧：我方派系 -->
-      <section class="our-faction-card">
-        <div class="faction-badge">
-          <i class="fas fa-flag"></i>
+      <section class="our-faction-section">
+        <div class="section-header">
+          <h2><i class="fas fa-flag"></i> 我方派系</h2>
         </div>
-        <h3 class="faction-name">{{ 我方派系.派系名称 }}</h3>
-        <div class="faction-core">
-          <span class="label">核心人物</span>
-          <CharacterName :name="我方派系.核心人物" class="core-char" />
-        </div>
-        <div class="faction-stats">
-          <div class="stat">
-            <span class="stat-label">实力评估</span>
-            <span class="stat-value" :class="strengthClass(我方派系.实力评估)">{{ 我方派系.实力评估 }}</span>
+        <div class="our-faction-card">
+          <div class="faction-badge">
+            <i class="fas fa-flag"></i>
           </div>
-          <div class="stat">
-            <span class="stat-label">势力范围</span>
-            <span class="stat-value">{{ 我方派系.势力范围 }}</span>
+          <h3 class="faction-name">{{ 我方派系.派系名称 }}</h3>
+          <div class="faction-core">
+            <span class="label">核心人物</span>
+            <CharacterName :name="我方派系.核心人物" class="core-char" />
           </div>
-        </div>
-        <div v-if="我方派系.近期动向 !== '无'" class="faction-trend">
-          <i class="fas fa-chart-line"></i>
-          <span>{{ 我方派系.近期动向 }}</span>
+          <div class="faction-stats">
+            <div class="stat">
+              <span class="stat-label">实力评估</span>
+              <span class="stat-value" :class="strengthClass(我方派系.实力评估)">{{ 我方派系.实力评估 }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">势力范围</span>
+              <span class="stat-value">{{ 我方派系.势力范围 }}</span>
+            </div>
+          </div>
+          <div v-if="我方派系.近期动向 !== '无'" class="faction-trend">
+            <i class="fas fa-chart-line"></i>
+            <span>{{ 我方派系.近期动向 }}</span>
+          </div>
         </div>
       </section>
 
@@ -72,8 +77,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useGameData } from '../stores/useGameData';
 import { CharacterName } from '../components/common';
+import { useGameData } from '../stores/useGameData';
 
 const gameData = useGameData();
 const 派系图谱 = computed(() => gameData.派系图谱);
@@ -117,17 +122,44 @@ function relationStyleClass(relation: string) {
   min-height: 0;
 }
 
-// ═══ 左侧：我方派系卡片 ═══
-.our-faction-card {
-  background: linear-gradient(135deg, rgba(216, 166, 87, 0.08) 0%, var(--color-bg-card) 100%);
-  border: 2px solid var(--color-gold);
+// ═══ 左侧：我方派系区域 ═══
+.our-faction-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  overflow: hidden;
+
+  > .section-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-gold);
+
+      i {
+        color: var(--color-gold);
+      }
+    }
+  }
+}
+
+.our-faction-card {
+  background: linear-gradient(135deg, rgba(216, 166, 87, 0.08) 0%, transparent 100%);
   padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   position: relative;
   overflow: hidden;
+  flex: 1;
 
   &::before {
     content: '';
@@ -203,9 +235,15 @@ function relationStyleClass(relation: string) {
     font-weight: 600;
     color: var(--color-text-secondary);
 
-    &.high { color: var(--color-success); }
-    &.mid { color: var(--color-info); }
-    &.low { color: var(--color-warning); }
+    &.high {
+      color: var(--color-success);
+    }
+    &.mid {
+      color: var(--color-info);
+    }
+    &.low {
+      color: var(--color-warning);
+    }
   }
 }
 
@@ -272,9 +310,29 @@ function relationStyleClass(relation: string) {
   background: var(--color-bg-elevated);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-border);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background var(--transition-fast);
 
-  &.ally-border { border-left-color: var(--color-success); }
-  &.enemy-border { border-left-color: var(--color-danger); }
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  &.ally-border {
+    border-left-color: var(--color-success);
+    &:hover {
+      box-shadow: 0 6px 16px rgba(74, 193, 142, 0.15);
+    }
+  }
+  &.enemy-border {
+    border-left-color: var(--color-danger);
+    &:hover {
+      box-shadow: 0 6px 16px rgba(255, 107, 107, 0.15);
+    }
+  }
 }
 
 .card-header {
@@ -335,9 +393,15 @@ function relationStyleClass(relation: string) {
     font-size: 11px;
     font-weight: 600;
 
-    &.high { color: var(--color-success); }
-    &.mid { color: var(--color-info); }
-    &.low { color: var(--color-warning); }
+    &.high {
+      color: var(--color-success);
+    }
+    &.mid {
+      color: var(--color-info);
+    }
+    &.low {
+      color: var(--color-warning);
+    }
   }
 }
 

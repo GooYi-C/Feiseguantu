@@ -154,7 +154,6 @@ type 待办类型 = typeof 机遇与危机.value.待办事项[string];
 
 // ═══ 机遇 TodoList ═══
 const opportunityTodo = useTodoList<机遇类型>({
-  cacheKey: 'scarlet_hidden_opportunities_v3',
   getActiveItems: () => 机遇与危机.value.当前机遇,
   deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.当前机遇[key]; },
   restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.当前机遇[key] = data; },
@@ -163,7 +162,6 @@ const opportunityTodo = useTodoList<机遇类型>({
 
 // ═══ 危机 TodoList ═══
 const crisisTodo = useTodoList<危机类型>({
-  cacheKey: 'scarlet_hidden_crises_v3',
   getActiveItems: () => 机遇与危机.value.潜在危机,
   deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.潜在危机[key]; },
   restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.潜在危机[key] = data; },
@@ -172,7 +170,6 @@ const crisisTodo = useTodoList<危机类型>({
 
 // ═══ 待办事项 TodoList ═══
 const todoList = useTodoList<待办类型>({
-  cacheKey: 'scarlet_hidden_todos_opp_v3',
   getActiveItems: () => 机遇与危机.value.待办事项,
   deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.待办事项[key]; },
   restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.待办事项[key] = data; },
@@ -240,15 +237,25 @@ function urgencyClass(level: string) {
   border-radius: var(--radius-lg);
   overflow: hidden;
   min-height: 0;
+  transition: transform var(--transition-fast),
+              box-shadow var(--transition-fast);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
 
   &.danger-column {
     border-top: 3px solid var(--color-danger);
+    &:hover { box-shadow: 0 8px 24px rgba(255, 107, 107, 0.15); }
   }
   &.success-column {
     border-top: 3px solid var(--color-success);
+    &:hover { box-shadow: 0 8px 24px rgba(74, 193, 142, 0.15); }
   }
   &.todo-column {
     border-top: 3px solid var(--color-info);
+    &:hover { box-shadow: 0 8px 24px rgba(122, 162, 247, 0.15); }
   }
 }
 
@@ -306,13 +313,31 @@ function urgencyClass(level: string) {
   border-left: 3px solid;
   transition: all var(--transition-fast);
 
-  &.danger { border-left-color: var(--color-danger); }
-  &.success { border-left-color: var(--color-success); }
+  &:hover:not(.completed) {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateX(2px);
+  }
+
+  &.danger {
+    border-left-color: var(--color-danger);
+    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2); }
+  }
+  &.success {
+    border-left-color: var(--color-success);
+    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(74, 193, 142, 0.2); }
+  }
   &.todo {
     border-left-color: var(--color-info);
+    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.2); }
 
-    &.urgent { border-left-color: var(--color-danger); }
-    &.high { border-left-color: var(--color-warning); }
+    &.urgent {
+      border-left-color: var(--color-danger);
+      &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2); }
+    }
+    &.high {
+      border-left-color: var(--color-warning);
+      &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(224, 195, 108, 0.2); }
+    }
   }
 
   &.completed {

@@ -203,3 +203,188 @@ ol {
   border: 0;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 微交互样式 (Phase 4.2)
+// ═══════════════════════════════════════════════════════════════
+
+// ─── 卡片hover效果 ───
+.card-hover {
+  transition: transform var(--transition-fast),
+              box-shadow var(--transition-fast),
+              border-color var(--transition-fast);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  // 可交互卡片变体
+  &.interactive:hover {
+    border-color: var(--color-gold);
+    cursor: pointer;
+  }
+}
+
+// ─── 面板hover效果 ───
+.panel-hover {
+  position: relative;
+  transition: background var(--transition-fast);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 0;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+// ─── 毛玻璃效果 ───
+.glass-effect {
+  background: rgba(22, 25, 34, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+// ─── 发光边框效果 ───
+.glow-border {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: var(--color-romance-gradient);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity var(--transition-fast);
+  }
+
+  &:hover::after {
+    opacity: 0.5;
+  }
+}
+
+// ─── 金色发光效果 ───
+.glow-gold {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity var(--transition-fast);
+  }
+
+  &:hover::after {
+    opacity: 0.4;
+  }
+}
+
+// ─── 列表项hover ───
+.list-item-hover {
+  transition: background var(--transition-fast),
+              padding-left var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-elevated);
+    padding-left: calc(var(--spacing-md) + 4px);
+  }
+}
+
+// ─── 数值变化动画 ───
+.value-change {
+  &.increase {
+    animation: pulse-green 0.3s ease;
+  }
+
+  &.decrease {
+    animation: pulse-red 0.3s ease;
+  }
+}
+
+@keyframes pulse-green {
+  0%, 100% { color: inherit; }
+  50% { color: var(--color-success); transform: scale(1.1); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { color: inherit; }
+  50% { color: var(--color-danger); transform: scale(1.1); }
+}
+
+// ─── 按钮hover增强 ───
+.btn-hover {
+  transition: all var(--transition-fast);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+// ─── 图标hover旋转 ───
+.icon-hover-rotate {
+  transition: transform var(--transition-normal);
+
+  &:hover {
+    transform: rotate(15deg);
+  }
+}
+
+// ─── 图标hover缩放 ───
+.icon-hover-scale {
+  transition: transform var(--transition-fast);
+
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+// ─── 淡入动画 ───
+.fade-in {
+  animation: fadeIn var(--transition-normal) ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+// ─── 上滑淡入 ───
+.slide-up-fade {
+  animation: slideUpFade var(--transition-slow) ease;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

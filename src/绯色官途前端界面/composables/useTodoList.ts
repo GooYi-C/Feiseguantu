@@ -1,7 +1,11 @@
 /**
  * 公共的 Todo List 逻辑
  * 实现勾选删除变量、取消勾选恢复变量的功能
- * 关键：保持列表项在原位显示，不因勾选状态改变顺序
+ * 
+ * 新版行为：
+ * - 当前楼层勾选后删除变量
+ * - 当前楼层可以取消勾选恢复变量（使用内存缓存）
+ * - 下一楼层刷新后，勾选的项目彻底消失（不再使用 localStorage 持久化）
  */
 import { ref, computed, onMounted } from 'vue';
 
@@ -14,8 +18,6 @@ export interface TodoItem<T> {
 }
 
 export interface TodoListOptions<T> {
-  /** localStorage 缓存键 */
-  cacheKey: string;
   /** 获取活跃项数据的函数 */
   getActiveItems: () => Record<string, T>;
   /** 删除活跃项的函数 */
@@ -29,52 +31,25 @@ export interface TodoListOptions<T> {
 }
 
 export function useTodoList<T>(options: TodoListOptions<T>) {
-  const { cacheKey, getActiveItems, deleteActiveItem, restoreActiveItem, saveToBackend, sortFn } = options;
+  const { getActiveItems, deleteActiveItem, restoreActiveItem, saveToBackend, sortFn } = options;
 
-  // 缓存结构：{ key -> { data, sortIndex } }
+  // 内存缓存：仅用于当前渲染周期内的取消勾选恢复
+  // 组件重新挂载（新楼层）时自动清空
   const hiddenCache = ref<Record<string, { data: T; sortIndex: number }>>({});
   // 排序索引计数器（用于新增项）
   let sortIndexCounter = 0;
   // 已分配的排序索引映射
   const sortIndexMap = ref<Record<string, number>>({});
 
-  // 加载缓存
+  // 初始化：为现有活跃项分配排序索引
   onMounted(() => {
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        hiddenCache.value = JSON.parse(cached);
-        // 初始化排序索引计数器
-        for (const item of Object.values(hiddenCache.value)) {
-          if (item.sortIndex >= sortIndexCounter) {
-            sortIndexCounter = item.sortIndex + 1;
-          }
-        }
-      }
-    } catch {
-      hiddenCache.value = {};
-    }
-
-    // 为现有活跃项分配排序索引
     const activeItems = getActiveItems();
     for (const key of Object.keys(activeItems)) {
-      if (hiddenCache.value[key]) {
-        // 使用缓存中的排序索引
-        sortIndexMap.value[key] = hiddenCache.value[key].sortIndex;
-      } else if (!sortIndexMap.value[key]) {
+      if (!sortIndexMap.value[key]) {
         sortIndexMap.value[key] = sortIndexCounter++;
       }
     }
   });
-
-  // 保存缓存
-  function saveCache() {
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(hiddenCache.value));
-    } catch (e) {
-      console.warn('[绯色官途] 缓存保存失败', e);
-    }
-  }
 
   // 合并列表：活跃项 + 隐藏项，按 sortIndex 排序保持原位
   const mergedList = computed(() => {
@@ -95,7 +70,7 @@ export function useTodoList<T>(options: TodoListOptions<T>) {
       });
     }
 
-    // 添加隐藏项
+    // 添加隐藏项（仅用于当前渲染周期内显示，允许取消勾选恢复）
     for (const [key, cached] of Object.entries(hiddenCache.value)) {
       // 确保活跃项中没有这个 key
       if (!activeItems[key]) {
@@ -128,16 +103,14 @@ export function useTodoList<T>(options: TodoListOptions<T>) {
         sortIndexMap.value[key] = cached.sortIndex;
         restoreActiveItem(key, cached.data);
         delete hiddenCache.value[key];
-        saveCache();
         await saveToBackend();
         console.info('[绯色官途] 项目已恢复:', key);
       }
     } else {
-      // 勾选：从活跃移除到缓存
+      // 勾选：从活跃移除到内存缓存
       const sortIndex = sortIndexMap.value[key] ?? sortIndexCounter++;
       hiddenCache.value[key] = { data, sortIndex };
       deleteActiveItem(key);
-      saveCache();
       await saveToBackend();
       console.info('[绯色官途] 项目已移除:', key);
     }
@@ -162,7 +135,6 @@ export function useTodoList<T>(options: TodoListOptions<T>) {
  * 带类型分组的 Todo List（如：被握把柄、手握把柄）
  */
 export interface GroupedTodoListOptions<T> {
-  cacheKey: string;
   groups: {
     type: string;
     getActiveItems: () => Record<string, T>;
@@ -174,49 +146,25 @@ export interface GroupedTodoListOptions<T> {
 }
 
 export function useGroupedTodoList<T>(options: GroupedTodoListOptions<T>) {
-  const { cacheKey, groups, saveToBackend, sortFn } = options;
+  const { groups, saveToBackend, sortFn } = options;
 
-  // 缓存结构：{ key -> { type, data, sortIndex } }
+  // 内存缓存：仅用于当前渲染周期内的取消勾选恢复
   const hiddenCache = ref<Record<string, { type: string; data: T; sortIndex: number }>>({});
   let sortIndexCounter = 0;
   const sortIndexMap = ref<Record<string, number>>({});
 
+  // 初始化：为现有活跃项分配排序索引
   onMounted(() => {
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        hiddenCache.value = JSON.parse(cached);
-        for (const item of Object.values(hiddenCache.value)) {
-          if (item.sortIndex >= sortIndexCounter) {
-            sortIndexCounter = item.sortIndex + 1;
-          }
-        }
-      }
-    } catch {
-      hiddenCache.value = {};
-    }
-
-    // 为现有活跃项分配排序索引
     for (const group of groups) {
       const activeItems = group.getActiveItems();
       for (const key of Object.keys(activeItems)) {
         const cacheKey = `${group.type}:${key}`;
-        if (hiddenCache.value[key]?.type === group.type) {
-          sortIndexMap.value[cacheKey] = hiddenCache.value[key].sortIndex;
-        } else if (!sortIndexMap.value[cacheKey]) {
+        if (!sortIndexMap.value[cacheKey]) {
           sortIndexMap.value[cacheKey] = sortIndexCounter++;
         }
       }
     }
   });
-
-  function saveCache() {
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(hiddenCache.value));
-    } catch (e) {
-      console.warn('[绯色官途] 缓存保存失败', e);
-    }
-  }
 
   // 获取特定分组的合并列表
   function getMergedListForGroup(groupType: string) {
@@ -242,7 +190,7 @@ export function useGroupedTodoList<T>(options: GroupedTodoListOptions<T>) {
         });
       }
 
-      // 添加隐藏项
+      // 添加隐藏项（仅用于当前渲染周期内显示）
       for (const [key, cached] of Object.entries(hiddenCache.value)) {
         if (cached.type === groupType && !activeItems[key]) {
           result.push({
@@ -277,15 +225,15 @@ export function useGroupedTodoList<T>(options: GroupedTodoListOptions<T>) {
         sortIndexMap.value[cacheKeyStr] = cached.sortIndex;
         group.restoreActiveItem(key, cached.data);
         delete hiddenCache.value[key];
-        saveCache();
         await saveToBackend();
+        console.info('[绯色官途] 项目已恢复:', key);
       }
     } else {
       const sortIndex = sortIndexMap.value[cacheKeyStr] ?? sortIndexCounter++;
       hiddenCache.value[key] = { type: groupType, data, sortIndex };
       group.deleteActiveItem(key);
-      saveCache();
       await saveToBackend();
+      console.info('[绯色官途] 项目已移除:', key);
     }
   }
 
@@ -312,4 +260,3 @@ export function useGroupedTodoList<T>(options: GroupedTodoListOptions<T>) {
     hiddenCache,
   };
 }
-

@@ -2,24 +2,6 @@
   <div class="characters-page">
     <!-- 顶部工具栏 -->
     <div class="toolbar">
-      <!-- 视图切换 -->
-      <div class="view-toggle">
-        <button
-          :class="{ active: viewMode === 'cards' }"
-          @click="viewMode = 'cards'"
-          title="卡片视图"
-        >
-          <i class="fas fa-grip"></i>
-        </button>
-        <button
-          :class="{ active: viewMode === 'network' }"
-          @click="viewMode = 'network'"
-          title="关系网视图"
-        >
-          <i class="fas fa-diagram-project"></i>
-        </button>
-      </div>
-
       <div class="search-box">
         <i class="fas fa-search"></i>
         <input v-model="searchQuery" type="text" placeholder="搜索人物..." />
@@ -39,25 +21,19 @@
           <option value="女">女</option>
         </select>
       </div>
-      <button class="add-btn" @click="showAddModal = true">
-        <i class="fas fa-plus"></i> 新增人物
-      </button>
+      <button class="add-btn" @click="showAddModal = true"><i class="fas fa-plus"></i> 新增人物</button>
     </div>
 
     <!-- 卡片视图 -->
-    <div v-show="viewMode === 'cards'" class="cards-view">
+    <div class="cards-view">
       <div class="char-grid">
-      <div
-        v-for="[name, char] in filteredCharacters"
-        :key="name"
+        <div
+          v-for="[name, char] in filteredCharacters"
+          :key="name"
           class="char-card poker-style"
-        :class="[
-          { selected: selectedChar === name },
-          genderClass(char.性别),
-          cardTypeClass(char),
-        ]"
-        @click="selectChar(name)"
-      >
+          :class="[{ selected: selectedChar === name }, genderClass(char.性别), cardTypeClass(char)]"
+          @click="selectChar(name)"
+        >
           <!-- 左上角状态角标（显示人物状态字段） -->
           <div v-if="char.状态 && char.状态 !== '无'" class="status-badge" :class="statusClass(char.状态)">
             {{ char.状态 }}
@@ -65,12 +41,7 @@
 
           <!-- 右上角标签区域 -->
           <div class="card-tags-side">
-            <span
-              v-for="tag in displayTags(char)"
-              :key="tag"
-              class="tag-side"
-              :class="tagClass(tag)"
-            >
+            <span v-for="tag in displayTags(char)" :key="tag" class="tag-side" :class="tagClass(tag)">
               {{ tag }}
             </span>
           </div>
@@ -99,14 +70,12 @@
               <div v-if="char.单位 && char.单位 !== '无'" class="detail-row org">
                 <i class="fas fa-building"></i>
                 <span>{{ char.单位 }}</span>
-        </div>
+              </div>
             </div>
           </div>
 
           <!-- 当前状态（底部，完整显示不省略） -->
-          <div v-if="char.当前状态 && char.当前状态 !== '无'" class="card-status">
-            「{{ char.当前状态 }}」
-            </div>
+          <div v-if="char.当前状态 && char.当前状态 !== '无'" class="card-status">「{{ char.当前状态 }}」</div>
 
           <!-- 好感度指示器 -->
           <div class="favor-indicator" v-if="char.好感度">
@@ -120,88 +89,6 @@
       </div>
     </div>
 
-    <!-- 关系网视图 -->
-    <div v-show="viewMode === 'network'" class="network-view">
-      <!-- 图例 -->
-      <div class="legend">
-        <div class="legend-item" v-for="rel in relationTypes" :key="rel.key">
-          <span class="legend-line" :style="{ background: rel.color }"></span>
-          <span>{{ rel.label }}</span>
-        </div>
-      </div>
-
-      <!-- 关系网图 -->
-      <div class="graph-container" ref="graphContainer">
-        <svg class="relation-graph" :viewBox="viewBox" @wheel="handleZoom" @mousedown="startPan">
-          <defs>
-            <linearGradient id="grad-romance" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color: #c41e3a" />
-              <stop offset="100%" style="stop-color: #ff4d6d" />
-            </linearGradient>
-          </defs>
-
-          <g :transform="`translate(${pan.x}, ${pan.y}) scale(${zoom})`">
-            <!-- 连接线 - 每个节点到中心的边 -->
-            <g class="edges">
-              <line
-                v-for="node in networkNodes"
-                :key="`edge-${node.name}`"
-                :x1="centerX"
-                :y1="centerY"
-                :x2="node.x"
-                :y2="node.y"
-                :stroke="getEdgeColor(node.relationType)"
-                :stroke-width="getEdgeWidth(node.relationType)"
-                :stroke-dasharray="getEdgeDash(node.relationType)"
-                opacity="0.6"
-              />
-            </g>
-
-            <!-- 节点 -->
-            <g class="nodes">
-              <!-- 中心节点：玩家 -->
-              <g class="node player" :transform="`translate(${centerX}, ${centerY})`">
-                <circle r="30" fill="url(#grad-romance)" />
-                <text y="5" text-anchor="middle" fill="white" font-size="12" font-weight="bold">
-                  {{ 玩家姓名 }}
-                </text>
-              </g>
-
-              <!-- 其他人物节点 -->
-              <g
-                v-for="node in networkNodes"
-                :key="node.name"
-                class="node"
-                :class="{ selected: selectedChar === node.name, dimmed: node.dimmed }"
-                :transform="`translate(${node.x}, ${node.y})`"
-                @click="selectChar(node.name)"
-              >
-                <circle :r="node.radius" :fill="node.fill" :stroke="node.stroke" stroke-width="2" />
-                <text :y="node.radius + 14" text-anchor="middle" fill="var(--color-text-secondary)" font-size="11">
-                  {{ node.name }}
-                </text>
-              </g>
-            </g>
-          </g>
-        </svg>
-
-        <!-- 缩放控制 -->
-        <div class="zoom-controls">
-          <button @click="zoomIn"><i class="fas fa-plus"></i></button>
-          <button @click="resetView"><i class="fas fa-crosshairs"></i></button>
-          <button @click="zoomOut"><i class="fas fa-minus"></i></button>
-        </div>
-
-        <!-- 统计信息 -->
-        <div class="stats-overlay">
-          <span class="node-count">
-            <i class="fas fa-users"></i>
-            {{ networkNodes.length }} / {{ 人物总数 }} 人物
-          </span>
-        </div>
-      </div>
-    </div>
-
     <!-- 使用新的 CharacterDrawer 组件 -->
     <CharacterDrawer
       v-model="showDrawer"
@@ -211,26 +98,19 @@
     />
 
     <!-- 使用新的 AddCharacterModal 组件 -->
-    <AddCharacterModal
-      v-model="showAddModal"
-      @created="handleCreated"
-    />
+    <AddCharacterModal v-model="showAddModal" @created="handleCreated" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useCharacters, useLocalCache, useGameData } from '../stores';
-import { CharacterDrawer, AddCharacterModal } from '../components/character';
+import { computed, ref } from 'vue';
+import { AddCharacterModal, CharacterDrawer } from '../components/character';
+import { useCharacters, useLocalCache } from '../stores';
 import type { 人物 } from '../stores/schema';
 
 // 使用拆分后的 Store
 const characters = useCharacters();
 const localCache = useLocalCache();
-const gameData = useGameData();
-
-// 视图模式
-const viewMode = ref<'cards' | 'network'>('cards');
 
 const searchQuery = ref('');
 const filterRelation = ref('');
@@ -238,35 +118,6 @@ const filterGender = ref('');
 const selectedChar = ref<string | null>(null);
 const showDrawer = ref(false);
 const showAddModal = ref(false);
-
-// 关系网视图状态
-const graphContainer = ref<HTMLElement | null>(null);
-const zoom = ref(1);
-const pan = ref({ x: 0, y: 0 });
-const isPanning = ref(false);
-const panStart = ref({ x: 0, y: 0 });
-
-// 从 useCharacters 获取人物库数据
-const 人物库 = computed(() => characters.人物库);
-const 人物总数 = computed(() => gameData.人物总数);
-const 玩家姓名 = computed(() => gameData.个人档案.基本信息.姓名 || '我');
-
-// 图形尺寸
-const width = 800;
-const height = 600;
-const centerX = width / 2;
-const centerY = height / 2;
-const viewBox = `0 0 ${width} ${height}`;
-
-// 关系网配置
-const relationTypes = [
-  { key: 'patron', label: '靠山', color: 'var(--color-rel-patron)' },
-  { key: 'romance', label: '绯色', color: 'var(--color-rel-romance)' },
-  { key: 'rival', label: '竞争', color: 'var(--color-rel-rival)' },
-  { key: 'enemy', label: '宿敌', color: 'var(--color-rel-enemy)' },
-  { key: 'family', label: '家属', color: 'var(--color-rel-family)' },
-  { key: 'official', label: '官场', color: 'var(--color-rel-official)' },
-];
 
 // 筛选逻辑
 const filteredCharacters = computed(() => {
@@ -313,13 +164,11 @@ const filteredCharacters = computed(() => {
           );
         case '靠山关系':
           return (
-            (char.靠山关系 && char.靠山关系.紧密度 && char.靠山关系.紧密度 !== '无') ||
-            char.角色标签?.includes('靠山')
+            (char.靠山关系 && char.靠山关系.紧密度 && char.靠山关系.紧密度 !== '无') || char.角色标签?.includes('靠山')
           );
         case '家庭关系':
           return (
-            (char.家庭关系 && char.家庭关系.关系 && char.家庭关系.关系 !== '无') ||
-            char.角色标签?.includes('家属')
+            (char.家庭关系 && char.家庭关系.关系 && char.家庭关系.关系 !== '无') || char.角色标签?.includes('家属')
           );
         default:
           return true;
@@ -329,106 +178,6 @@ const filteredCharacters = computed(() => {
 
   return entries;
 });
-
-// 获取人物的关系类型
-function getCharRelationType(char: 人物): string {
-  if (char.靠山关系 && char.靠山关系.紧密度 !== '无' || char.角色标签?.includes('靠山')) {
-    return 'patron';
-  } else if ((char.绯色关系 && char.绯色关系.关系阶段 !== '无') || char.角色标签?.includes('绯色对象')) {
-    return 'romance';
-  } else if (char.角色标签?.includes('政治宿敌')) {
-    return 'enemy';
-  } else if ((char.竞争关系 && char.竞争关系.竞争目标 !== '无') || char.角色标签?.includes('竞争对手')) {
-    return 'rival';
-  } else if ((char.家庭关系 && char.家庭关系.关系 !== '无') || char.角色标签?.includes('家属')) {
-    return 'family';
-  }
-  return 'official';
-}
-
-// 计算关系网节点（基于筛选后的人物）
-const networkNodes = computed(() => {
-  const chars = filteredCharacters.value;
-  const count = chars.length;
-  if (count === 0) return [];
-
-  const radius = Math.min(width, height) * 0.35;
-
-  return chars.map(([name, char], i) => {
-    const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-    const x = centerX + radius * Math.cos(angle);
-    const y = centerY + radius * Math.sin(angle);
-
-    // 确定节点类型和样式
-    let nodeRadius = 20;
-    let fill = 'var(--color-bg-elevated)';
-    let stroke = 'var(--color-border)';
-    const relationType = getCharRelationType(char);
-
-    switch (relationType) {
-      case 'patron':
-        nodeRadius = 24;
-        fill = 'rgba(216, 166, 87, 0.2)';
-        stroke = 'var(--color-rel-patron)';
-        break;
-      case 'romance':
-        fill = 'rgba(255, 77, 109, 0.2)';
-        stroke = 'var(--color-rel-romance)';
-        break;
-      case 'enemy':
-        nodeRadius = 24;
-        fill = 'rgba(230, 57, 70, 0.2)';
-        stroke = 'var(--color-rel-enemy)';
-        break;
-      case 'rival':
-        fill = 'rgba(255, 136, 68, 0.2)';
-        stroke = 'var(--color-rel-rival)';
-        break;
-      case 'family':
-        fill = 'rgba(122, 162, 247, 0.2)';
-        stroke = 'var(--color-rel-family)';
-        break;
-    }
-
-    return {
-      name,
-      x,
-      y,
-      radius: nodeRadius,
-      fill,
-      stroke,
-      relationType,
-      char,
-      dimmed: false,
-    };
-  });
-});
-
-// 关系颜色映射（使用实际颜色值而非 CSS 变量，确保 SVG 兼容性）
-const relationColors: Record<string, string> = {
-  patron: '#d8a657',   // 靠山-金色
-  romance: '#ff4d6d',  // 绯色-粉红
-  rival: '#ff8844',    // 竞争-橙红
-  enemy: '#e63946',    // 宿敌-深红
-  family: '#7aa2f7',   // 家属-柔蓝
-  official: '#a0a5b8', // 官场-银灰
-};
-
-// 边样式辅助函数（直接在模板中使用，避免 computed 响应式问题）
-function getEdgeColor(relationType: string): string {
-  if (relationType === 'romance') return 'url(#grad-romance)';
-  return relationColors[relationType] || relationColors.official;
-}
-
-function getEdgeWidth(relationType: string): number {
-  return relationType === 'official' ? 1 : 2;
-}
-
-function getEdgeDash(relationType: string): string {
-  if (relationType === 'enemy') return '4,2';
-  if (relationType === 'rival') return '6,3';
-  return '';
-}
 
 function selectChar(name: string) {
   selectedChar.value = name;
@@ -470,12 +219,6 @@ function genderClass(gender: string | undefined) {
   return '';
 }
 
-function genderIcon(gender: string | undefined) {
-  if (gender === '男') return 'fas fa-mars';
-  if (gender === '女') return 'fas fa-venus';
-  return 'fas fa-genderless';
-}
-
 function avatarIcon(gender: string | undefined) {
   if (gender === '男') return 'fas fa-user-tie';
   if (gender === '女') return 'fas fa-user';
@@ -496,7 +239,10 @@ function cardTypeClass(char: 人物) {
   if (char.角色标签?.includes('靠山') || (char.靠山关系?.紧密度 && char.靠山关系.紧密度 !== '无')) {
     return 'type-backer';
   }
-  if (char.角色标签?.some(t => ['竞争对手', '政治宿敌'].includes(t)) || (char.竞争关系?.竞争目标 && char.竞争关系.竞争目标 !== '无')) {
+  if (
+    char.角色标签?.some(t => ['竞争对手', '政治宿敌'].includes(t)) ||
+    (char.竞争关系?.竞争目标 && char.竞争关系.竞争目标 !== '无')
+  ) {
     return 'type-rival';
   }
   if (char.角色标签?.includes('家属') || (char.家庭关系?.关系 && char.家庭关系.关系 !== '无')) {
@@ -505,56 +251,17 @@ function cardTypeClass(char: 人物) {
   return '';
 }
 
-// 关系网缩放控制
-function handleZoom(e: WheelEvent) {
-  e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-  zoom.value = Math.max(0.5, Math.min(2, zoom.value + delta));
-}
-
-function startPan(e: MouseEvent) {
-  isPanning.value = true;
-  panStart.value = { x: e.clientX - pan.value.x, y: e.clientY - pan.value.y };
-
-  const onMove = (me: MouseEvent) => {
-    if (!isPanning.value) return;
-    pan.value = { x: me.clientX - panStart.value.x, y: me.clientY - panStart.value.y };
-  };
-
-  const onUp = () => {
-    isPanning.value = false;
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', onUp);
-  };
-
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
-}
-
-function zoomIn() {
-  zoom.value = Math.min(2, zoom.value + 0.2);
-}
-
-function zoomOut() {
-  zoom.value = Math.max(0.5, zoom.value - 0.2);
-}
-
-function resetView() {
-  zoom.value = 1;
-  pan.value = { x: 0, y: 0 };
-}
-
 // 事件处理
 function handleCreated(name: string) {
   selectedChar.value = name;
   showDrawer.value = true;
 }
 
-function handleDeleted(name: string) {
-    selectedChar.value = null;
+function handleDeleted(_name: string) {
+  selectedChar.value = null;
 }
 
-function handleUpdated(name: string) {
+function handleUpdated(_name: string) {
   // 更新成功，数据已自动刷新
 }
 </script>
@@ -573,38 +280,6 @@ function handleUpdated(name: string) {
   flex-wrap: wrap;
   gap: var(--spacing-md);
   align-items: center;
-}
-
-.view-toggle {
-  display: flex;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-
-  button {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-muted);
-    transition: all var(--transition-fast);
-
-    &:hover {
-      background: var(--color-bg-elevated);
-      color: var(--color-text-primary);
-    }
-
-    &.active {
-      background: var(--color-gold);
-      color: var(--color-bg-dark);
-    }
-
-    &:first-child {
-      border-right: 1px solid var(--color-border);
-    }
-  }
 }
 
 .search-box {
@@ -707,22 +382,34 @@ function handleUpdated(name: string) {
   &.type-romance {
     border-color: rgba(255, 77, 109, 0.5);
     background: linear-gradient(180deg, rgba(255, 77, 109, 0.05) 0%, var(--color-bg-card) 30%);
-    &:hover, &.selected { border-color: var(--color-romance-light); }
+    &:hover,
+    &.selected {
+      border-color: var(--color-romance-light);
+    }
   }
   &.type-backer {
     border-color: rgba(74, 193, 142, 0.5);
     background: linear-gradient(180deg, rgba(74, 193, 142, 0.05) 0%, var(--color-bg-card) 30%);
-    &:hover, &.selected { border-color: var(--color-success); }
+    &:hover,
+    &.selected {
+      border-color: var(--color-success);
+    }
   }
   &.type-rival {
     border-color: rgba(255, 107, 107, 0.5);
     background: linear-gradient(180deg, rgba(255, 107, 107, 0.05) 0%, var(--color-bg-card) 30%);
-    &:hover, &.selected { border-color: var(--color-danger); }
+    &:hover,
+    &.selected {
+      border-color: var(--color-danger);
+    }
   }
   &.type-family {
     border-color: rgba(122, 162, 247, 0.5);
     background: linear-gradient(180deg, rgba(122, 162, 247, 0.05) 0%, var(--color-bg-card) 30%);
-    &:hover, &.selected { border-color: var(--color-info); }
+    &:hover,
+    &.selected {
+      border-color: var(--color-info);
+    }
   }
 }
 
@@ -853,8 +540,12 @@ function handleUpdated(name: string) {
     margin: 0 0 4px;
     line-height: 1.2;
 
-    &.male { color: #4a90d9; }
-    &.female { color: #e84393; }
+    &.male {
+      color: #4a90d9;
+    }
+    &.female {
+      color: #e84393;
+    }
   }
 }
 
@@ -919,7 +610,6 @@ function handleUpdated(name: string) {
   font-style: italic;
   line-height: 1.4;
   word-break: break-word;
-  // 不使用省略号，允许换行完整显示
 }
 
 // 好感度指示器
@@ -937,136 +627,16 @@ function handleUpdated(name: string) {
     height: 100%;
     transition: width 0.3s ease;
 
-    &.high { background: linear-gradient(90deg, #4ac18e, #2ecc71); }
-    &.mid { background: linear-gradient(90deg, #e0c36c, #f1c40f); }
-    &.low { background: linear-gradient(90deg, #ff6b6b, #e74c3c); }
-  }
-}
-
-// ═══ 关系网视图 ═══
-.network-view {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  min-height: 0;
-}
-
-// 图例
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-    color: var(--color-text-muted);
-}
-
-.legend-line {
-  width: 20px;
-  height: 3px;
-  border-radius: 2px;
-  }
-
-// 图形容器
-.graph-container {
-    flex: 1;
-  position: relative;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-    overflow: hidden;
-  min-height: 300px;
-  }
-
-.relation-graph {
-  width: 100%;
-    height: 100%;
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-.node {
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-
-  &.dimmed {
-    opacity: 0.3;
-  }
-
-  &.selected circle {
-    stroke-width: 3;
-    filter: drop-shadow(0 0 8px currentColor);
-  }
-
-  &:hover:not(.player) circle {
-    filter: brightness(1.2);
-  }
-}
-
-// 缩放控制
-.zoom-controls {
-  position: absolute;
-  bottom: var(--spacing-md);
-  right: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: var(--color-bg-elevated);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-
-  button {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-secondary);
-    border-bottom: 1px solid var(--color-border);
-
-    &:last-child {
-      border-bottom: none;
+    &.high {
+      background: linear-gradient(90deg, #4ac18e, #2ecc71);
     }
-
-    &:hover {
-      background: var(--color-bg-card);
-      color: var(--color-text-primary);
+    &.mid {
+      background: linear-gradient(90deg, #e0c36c, #f1c40f);
+    }
+    &.low {
+      background: linear-gradient(90deg, #ff6b6b, #e74c3c);
     }
   }
-}
-
-// 统计信息
-.stats-overlay {
-  position: absolute;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
-
-  .node-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    color: var(--color-text-secondary);
-
-    i {
-      color: var(--color-gold);
-  }
-}
 }
 
 // ═══ 空状态 ═══
