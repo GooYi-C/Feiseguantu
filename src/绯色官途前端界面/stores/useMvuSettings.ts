@@ -38,8 +38,7 @@ const ApiConfigSchema = z
 const PromptConfigSchema = z
   .object({
     sendPreset: z.boolean().default(false),
-    selectedLorebooks: z.array(z.string()).default([]), // 保留向后兼容
-    selectedEntries: z.array(z.string()).default([]), // 新增：选中的条目 uid 列表
+    // 注意：selectedLorebooks/selectedEntries 已废弃，世界书现在通过 [mvu_update]/[mvu_start] 标签自动筛选
     customSystemPrompt: z.string()
       .default(`你是一个变量更新助手。请根据以下剧情内容，分析变量应该如何变化，并输出变量更新命令。
 
@@ -66,7 +65,6 @@ _.set('变量路径', 新值);//更新原因
 const SettingsSchema = z
   .object({
     enableExtraModelParsing: z.boolean().default(false),
-    useMainApi: z.boolean().default(true), // 与插头相同
     apiConfig: ApiConfigSchema,
     promptConfig: PromptConfigSchema,
     savedProfiles: z
@@ -135,6 +133,13 @@ export const SCARLET_MVU_EVENTS = {
   REQUEST_SAVE_SETTINGS: 'scarlet_mvu_request_save_settings',
   REQUEST_GET_SETTINGS: 'scarlet_mvu_request_get_settings',
   SETTINGS_RESPONSE: 'scarlet_mvu_settings_response',
+  // 开局相关
+  REQUEST_GENERATE_STARTUP_VARIABLES: 'scarlet_mvu_request_generate_startup_variables',
+  REQUEST_CONFIRM_STARTUP: 'scarlet_mvu_request_confirm_startup',
+  STARTUP_GENERATION_STARTED: 'scarlet_mvu_startup_generation_started',
+  STARTUP_GENERATION_COMPLETED: 'scarlet_mvu_startup_generation_completed',
+  STARTUP_GENERATION_ERROR: 'scarlet_mvu_startup_generation_error',
+  STARTUP_CONFIRMED: 'scarlet_mvu_startup_confirmed',
   // 生成拦截相关
   GENERATION_BLOCKED: 'scarlet_mvu_generation_blocked',
   GENERATION_BLOCK_CONFIRMED: 'scarlet_mvu_generation_block_confirmed',
@@ -160,7 +165,7 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
   const pendingUpdate = ref<PendingUpdateData | null>(null);
   const showConfirmDialog = ref(false);
 
-  // 生成拦截相关状态
+  // 生成拦截相关状态 (预留扩展)
   const showBlockConfirm = ref(false);
   const blockConfirmMessage = ref('');
 
@@ -284,67 +289,6 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     }
   }
 
-  // ═══ 切换世界书选中状态 (保留向后兼容) ═══
-  function toggleLorebookSelection(lorebookName: string): void {
-    const index = settings.value.promptConfig.selectedLorebooks.indexOf(lorebookName);
-    if (index >= 0) {
-      settings.value.promptConfig.selectedLorebooks.splice(index, 1);
-    } else {
-      settings.value.promptConfig.selectedLorebooks.push(lorebookName);
-    }
-    saveSettings();
-  }
-
-  // ═══ 切换条目选中状态 ═══
-  function toggleEntrySelection(entryUid: string): void {
-    const index = settings.value.promptConfig.selectedEntries.indexOf(entryUid);
-    if (index >= 0) {
-      settings.value.promptConfig.selectedEntries.splice(index, 1);
-    } else {
-      settings.value.promptConfig.selectedEntries.push(entryUid);
-    }
-    saveSettings();
-  }
-
-  // ═══ 全选/取消全选某世界书的所有条目 ═══
-  function toggleAllEntriesInLorebook(lorebookName: string, selected: boolean): void {
-    const lorebook = lorebookList.value.find(lb => lb.name === lorebookName);
-    if (!lorebook) return;
-
-    const entryUids = lorebook.entryList.map(e => e.uid);
-
-    if (selected) {
-      // 全选：添加所有不在列表中的条目
-      for (const uid of entryUids) {
-        if (!settings.value.promptConfig.selectedEntries.includes(uid)) {
-          settings.value.promptConfig.selectedEntries.push(uid);
-        }
-      }
-    } else {
-      // 取消全选：移除所有该世界书的条目
-      settings.value.promptConfig.selectedEntries = settings.value.promptConfig.selectedEntries.filter(
-        uid => !entryUids.includes(uid),
-      );
-    }
-    saveSettings();
-  }
-
-  // ═══ 检查某世界书是否有条目被选中 ═══
-  function isLorebookPartiallySelected(lorebookName: string): boolean {
-    const lorebook = lorebookList.value.find(lb => lb.name === lorebookName);
-    if (!lorebook) return false;
-    const entryUids = lorebook.entryList.map(e => e.uid);
-    return entryUids.some(uid => settings.value.promptConfig.selectedEntries.includes(uid));
-  }
-
-  // ═══ 检查某世界书是否全部条目被选中 ═══
-  function isLorebookFullySelected(lorebookName: string): boolean {
-    const lorebook = lorebookList.value.find(lb => lb.name === lorebookName);
-    if (!lorebook || lorebook.entryList.length === 0) return false;
-    const entryUids = lorebook.entryList.map(e => e.uid);
-    return entryUids.every(uid => settings.value.promptConfig.selectedEntries.includes(uid));
-  }
-
   // ═══ 获取Prompt预览 ═══
   async function fetchPromptPreview(): Promise<void> {
     isLoadingPreview.value = true;
@@ -425,6 +369,45 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     }
   }
 
+  // ═══ 开局相关方法 ═══
+  // 生成开局变量
+  async function generateStartupVariables(startupDescription: string): Promise<void> {
+    const api = getScriptApi();
+    if (api) {
+      await api.generateStartupVariables(startupDescription);
+    } else {
+      eventEmit(SCARLET_MVU_EVENTS.REQUEST_GENERATE_STARTUP_VARIABLES, { startupDescription });
+    }
+  }
+
+  // 确认开局（发送固定消息到1层）
+  async function confirmStartup(): Promise<void> {
+    const api = getScriptApi();
+    if (api) {
+      await api.confirmStartup();
+    } else {
+      eventEmit(SCARLET_MVU_EVENTS.REQUEST_CONFIRM_STARTUP);
+    }
+  }
+
+  // 检查当前是否在0层（开局状态）
+  function isAtStartupLayer(): boolean {
+    const api = getScriptApi();
+    if (api) {
+      return api.isAtStartupLayer();
+    }
+    return false;
+  }
+
+  // 获取当前消息ID
+  function getCurrentMessageId(): number {
+    const api = getScriptApi();
+    if (api) {
+      return api.getCurrentMessageId();
+    }
+    return -1;
+  }
+
   // ═══ 确认/取消更新 ═══
   function confirmUpdate(confirmed: boolean, editedUpdateBlock?: string): void {
     const api = getScriptApi();
@@ -440,11 +423,13 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     pendingUpdate.value = null;
   }
 
-  // ═══ 确认/取消生成拦截 ═══
+  // ═══ 生成拦截确认 ═══
   function confirmGenerationBlock(confirmed: boolean): void {
-    eventEmit(SCARLET_MVU_EVENTS.GENERATION_BLOCK_CONFIRMED, confirmed);
     showBlockConfirm.value = false;
     blockConfirmMessage.value = '';
+    console.info('[绯色官途前端] 生成拦截确认:', confirmed);
+    // 发送确认结果到脚本
+    eventEmit(SCARLET_MVU_EVENTS.GENERATION_BLOCK_CONFIRMED, confirmed);
   }
 
   // ═══ 设置事件监听 ═══
@@ -457,6 +442,7 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
 
     // 监听解析状态
     eventOn(SCARLET_MVU_EVENTS.PARSING_STARTED, () => {
+      console.info('[绯色官途前端] PARSING_STARTED 事件收到, 设置 isParsingInProgress = true');
       isParsingInProgress.value = true;
       parsingProgress.value = '开始解析...';
     });
@@ -466,6 +452,7 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     });
 
     eventOn(SCARLET_MVU_EVENTS.PARSING_COMPLETED, () => {
+      console.info('[绯色官途前端] PARSING_COMPLETED 事件收到, 设置 isParsingInProgress = false');
       isParsingInProgress.value = false;
       parsingProgress.value = '';
     });
@@ -480,9 +467,6 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     eventOn(SCARLET_MVU_EVENTS.PARSING_ABORTED, () => {
       isParsingInProgress.value = false;
       parsingProgress.value = '';
-      // 清理待确认状态，将图标恢复为黄色
-      pendingUpdate.value = null;
-      showConfirmDialog.value = false;
     });
 
     eventOn(SCARLET_MVU_EVENTS.PARSING_ERROR, () => {
@@ -527,6 +511,7 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
 
     // 监听生成拦截事件
     eventOn(SCARLET_MVU_EVENTS.GENERATION_BLOCKED, (data: { reason: string; message: string }) => {
+      console.info('[绯色官途前端] 生成被拦截:', data);
       blockConfirmMessage.value = data.message;
       showBlockConfirm.value = true;
     });
@@ -538,19 +523,21 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     setupEventListeners();
     await loadSettings();
 
-    // Bug 1 修复：初始化时同步脚本的解析状态
-    // 前端 iframe 可能在脚本已经开始解析后才加载，需要同步状态
+    // 从脚本同步当前的解析状态（解决 UI 重载后状态丢失问题）
     const api = getScriptApi();
     if (api) {
-      const isParsing = api.isParsingInProgress();
-      if (isParsing) {
+      const currentParsingState = api.isParsingInProgress();
+      if (currentParsingState) {
+        console.info('[绯色官途前端] 初始化时检测到脚本正在解析中，同步状态');
         isParsingInProgress.value = true;
-        parsingProgress.value = '正在解析...';
+        parsingProgress.value = '解析中...';
       }
-      // 同步待确认状态
-      const pending = api.getPendingConfirmation();
-      if (pending) {
-        pendingUpdate.value = pending;
+
+      // 同步待确认的更新
+      const pendingConfirm = api.getPendingConfirmation();
+      if (pendingConfirm) {
+        console.info('[绯色官途前端] 初始化时检测到待确认的更新，恢复弹窗');
+        pendingUpdate.value = pendingConfirm;
         showConfirmDialog.value = true;
       }
     }
@@ -575,8 +562,6 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     modelListError,
     pendingUpdate,
     showConfirmDialog,
-    showBlockConfirm,
-    blockConfirmMessage,
     lorebookList,
     isLoadingLorebooks,
     promptPreview,
@@ -598,11 +583,6 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     updatePromptConfig,
     fetchModelList,
     fetchLorebookList,
-    toggleLorebookSelection,
-    toggleEntrySelection,
-    toggleAllEntriesInLorebook,
-    isLorebookPartiallySelected,
-    isLorebookFullySelected,
     fetchPromptPreview,
     selectModel,
     saveProfile,
@@ -613,5 +593,13 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     confirmGenerationBlock,
     setupEventListeners,
     initialize,
+    // 开局相关
+    generateStartupVariables,
+    confirmStartup,
+    isAtStartupLayer,
+    getCurrentMessageId,
+    // 生成拦截相关
+    showBlockConfirm,
+    blockConfirmMessage,
   };
 });

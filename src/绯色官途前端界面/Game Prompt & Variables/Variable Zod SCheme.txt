@@ -26,7 +26,6 @@ const 星期 = z.string().transform(v => {
 
 // ========== 核心枚举 ==========
 const 性别枚举 = z.enum(["无", "男", "女"]);
-const 体系枚举 = z.enum(["无", "党政", "军队", "事业", "国企"]);
 const 婚姻状态枚举 = z.enum(["无", "未婚", "已婚", "离异", "丧偶"]);
 const 政治气候枚举 = z.enum(["无", "狂飙年代", "雷霆震荡", "大考淬炼", "存量博弈"]);
 
@@ -105,7 +104,7 @@ const 人物Schema = z.object({
   姓名: 可选文本,
   性别: 性别枚举.prefault("无"),
   年龄: z.coerce.number().prefault(0),
-  体系: 体系枚举.prefault("无"),
+  体系: 可选文本,
   级别: 可选文本,
   职务: 可选文本,
   单位: 可选文本,
@@ -126,8 +125,6 @@ const 人物Schema = z.object({
 });
 
 // ========== 自动清理逻辑 ==========
-const 需移除的人物状态 = ["落马",  "病故", "去世", "失踪", "离世"];
-const 需移除的绯色阶段 = ["彻底终结"];
 
 const 计算政治气候 = (年) => {
   if (年 <= 0 || 年 < 2000) return "无";
@@ -181,20 +178,6 @@ export const Schema = z.object({
   }).prefault({}),
 
   人物库: z.record(z.string(), 人物Schema)
-    .transform(record => {
-      const filtered = {};
-      for (const [key, value] of Object.entries(record)) {
-        if (需移除的人物状态.includes(value.状态)) continue;
-        if (value.绯色关系 && 需移除的绯色阶段.includes(value.绯色关系.关系阶段)) {
-          const 其他角色 = (value.角色标签 || []).filter(tag => tag !== "绯色对象");
-          if (其他角色.length === 0) continue;
-          value.绯色关系 = undefined;
-          value.角色标签 = 其他角色;
-        }
-        filtered[key] = value;
-      }
-      return filtered;
-    })
     .prefault({}),
 
   关系索引: z.object({
@@ -237,7 +220,7 @@ export const Schema = z.object({
     现任职务: z.object({
       职务名称: 可选文本,
       任职单位: 可选文本,
-      体系: 体系枚举.prefault("无"),
+      体系: 可选文本,
       级别: 可选文本,
       编制类型: 可选文本,
       任职时间: 可选文本,
@@ -271,7 +254,7 @@ export const Schema = z.object({
     任职履历: z.record(z.string(), z.object({
       职务名称: 可选文本,
       单位: 可选文本,
-      体系: 体系枚举.prefault("无"),
+      体系: 可选文本,
       级别: 可选文本,
       起始年月: 可选文本,
       结束年月: 可选文本,
@@ -377,13 +360,6 @@ export const Schema = z.object({
       杀伤力: 可选文本
     })).prefault({}),
     人情债: z.record(z.string(), 人情债条目Schema)
-      .transform(record => {
-        const filtered = {};
-        for (const [key, value] of Object.entries(record)) {
-          if (!value.已偿还) filtered[key] = value;
-        }
-        return filtered;
-      })
       .prefault({})
   }).prefault({}),
 

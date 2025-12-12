@@ -67,11 +67,12 @@ const 星期 = z
   })
   .prefault('无');
 
-// ========== 核心枚举 ==========
-export const 性别枚举 = z.enum(['无', '男', '女']);
-export const 体系枚举 = z.enum(['无', '党政', '军队', '事业', '国企']);
-export const 婚姻状态枚举 = z.enum(['无', '未婚', '已婚', '离异', '丧偶']);
-export const 政治气候枚举 = z.enum(['无', '狂飙年代', '雷霆震荡', '大考淬炼', '存量博弈']);
+// ========== 核心类型 ==========
+// 改为可选文本以避免 LLM 幻觉导致的验证失败
+export const 性别枚举 = 可选文本;
+export const 体系枚举 = 可选文本;
+export const 婚姻状态枚举 = 可选文本;
+export const 政治气候枚举 = 可选文本;
 
 // ========== 关系扩展 Schema ==========
 export const 官场关系Schema = z
@@ -235,7 +236,7 @@ export const GameSchema = z.object({
     .transform(data => {
       const 年 = data.当前日期?.年;
       if (年 && 年 >= 2000) {
-        return { ...data, 政治气候: 计算政治气候(年) as z.infer<typeof 政治气候枚举> };
+        return { ...data, 政治气候: 计算政治气候(年) };
       }
       return data;
     })

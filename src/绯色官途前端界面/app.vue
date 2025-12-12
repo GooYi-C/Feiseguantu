@@ -1,19 +1,19 @@
 <template>
-  <div class="app-container" :class="themeClass">
+  <div class="app-container" :class="themeClass" :style="{ aspectRatio: aspectRatioStyle }">
     <!-- 左侧常驻导航栏 -->
-    <aside class="sidebar-nav">
+    <aside class="sidebar-nav" :class="{ 'startup-mode': isStartupMode }">
       <nav class="nav-list">
         <router-link
-          v-for="route in navRoutes"
-          :key="route.path"
-          :to="route.path"
+          v-for="navRoute in navRoutes"
+          :key="navRoute.path"
+          :to="navRoute.path"
           class="nav-item"
-          :class="[{ active: isActive(route.path) }, `nav-${route.name}`]"
-          :title="route.meta?.title"
+          :class="[{ active: isActive(navRoute.path) }, `nav-${String(navRoute.name || '')}`]"
+          :title="navRoute.meta?.title as string | undefined"
         >
-          <i class="fas" :class="route.meta?.icon"></i>
-          <span v-if="getNavBadge(route.name as string)" class="nav-badge">
-            {{ getNavBadge(route.name as string) }}
+          <i class="fas" :class="navRoute.meta?.icon"></i>
+          <span v-if="!isStartupMode && getNavBadge(String(navRoute.name || ''))" class="nav-badge">
+            {{ getNavBadge(String(navRoute.name || '')) }}
           </span>
         </router-link>
       </nav>
@@ -22,14 +22,19 @@
     <!-- 右侧主内容区 -->
     <div class="main-wrapper">
       <!-- 顶部信息栏 -->
-      <header class="app-header">
-        <div class="header-left">
+      <header class="app-header" :class="{ 'startup-mode': isStartupMode }">
+        <!-- 正常模式：左侧显示政治气候 -->
+        <div v-if="!isStartupMode" class="header-left">
           <h1 class="app-title">
             <span v-if="政治气候 !== '无'" class="title-text">{{ 政治气候 }}</span>
             <span v-else class="title-text">狂飙年代</span>
           </h1>
         </div>
-        <div v-if="时空舆情.当前日期.年" class="header-center">
+        <!-- 开局模式：左侧留空 -->
+        <div v-else class="header-left"></div>
+
+        <!-- 正常模式：中间显示日期时间地点 -->
+        <div v-if="!isStartupMode && 时空舆情.当前日期.年" class="header-center">
           <span class="date-display">
             <i class="far fa-calendar-alt"></i>
             {{ 时空舆情.当前日期.年 }}年{{ 时空舆情.当前日期.月 }}月{{ 时空舆情.当前日期.日 }}日
@@ -44,21 +49,32 @@
             {{ 时空舆情.当前地点 }}
           </span>
         </div>
+        <!-- 开局模式：中间居中显示"开局设置" -->
+        <div v-else-if="isStartupMode" class="header-center startup-title">
+          <h1 class="startup-title-text">开局设置</h1>
+        </div>
+        <!-- 无日期时的占位 -->
+        <div v-else class="header-center"></div>
+
         <div class="header-right">
-          <span v-if="个人档案.基本信息.姓名 !== '无'" class="player-info">
-            <span class="player-name">{{ 个人档案.基本信息.姓名 }}</span>
-            <span class="player-rank">{{ 个人档案.现任职务.级别 || '待定' }}</span>
-          </span>
-          <router-link v-if="人物总数 > 0" to="/characters" class="char-count clickable">
-            <i class="fas fa-users"></i>
-            {{ 人物总数 }}
-          </router-link>
+          <!-- 正常模式才显示玩家信息和人物统计 -->
+          <template v-if="!isStartupMode">
+            <span v-if="个人档案.基本信息.姓名 !== '无'" class="player-info">
+              <span class="player-name">{{ 个人档案.基本信息.姓名 }}</span>
+              <span class="player-rank">{{ 个人档案.现任职务.级别 || '待定' }}</span>
+            </span>
+            <router-link v-if="人物总数 > 0" to="/characters" class="char-count clickable">
+              <i class="fas fa-users"></i>
+              {{ 人物总数 }}
+            </router-link>
+          </template>
           <!-- MVU重试解析按钮 -->
           <button
             class="mvu-retry-btn"
             :class="{
               parsing: mvuSettings.isParsingInProgress,
               minimized: isDialogMinimized,
+              startup: isStartupMode && !isDialogMinimized && !mvuSettings.isParsingInProgress,
             }"
             :title="mvuRetryButtonTitle"
             aria-label="重试变量解析"
@@ -66,6 +82,7 @@
           >
             <i v-if="isDialogMinimized" class="fas fa-window-restore minimized-icon"></i>
             <i v-else-if="mvuSettings.isParsingInProgress" class="fas fa-stop-circle abort-icon"></i>
+            <i v-else-if="isStartupMode" class="fas fa-magic startup-icon"></i>
             <i v-else class="fas fa-sync-alt"></i>
           </button>
           <!-- 设置按钮 -->
@@ -129,12 +146,8 @@
       </div>
       <template #footer>
         <div class="block-confirm-actions">
-          <button class="btn-cancel" @click="handleBlockCancel">
-            <i class="fas fa-times"></i> 取消发送
-          </button>
-          <button class="btn-confirm" @click="handleBlockConfirm">
-            <i class="fas fa-check"></i> 确认发送
-          </button>
+          <button class="btn-cancel" @click="handleBlockCancel"><i class="fas fa-times"></i> 取消发送</button>
+          <button class="btn-confirm" @click="handleBlockConfirm"><i class="fas fa-check"></i> 确认发送</button>
         </div>
       </template>
     </Modal>
@@ -142,18 +155,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { CharacterDrawer } from './components/character';
 import { Modal } from './components/common';
 import { MvuConfirmDialog } from './components/mvu';
-import { routes } from './router';
-import { useCharacterDrawer, useGameData, useMvuSettings } from './stores';
+import { routes, startupRoutes } from './router';
+import { useCharacterDrawer, useGameData, useMvuSettings, useUiSettings } from './stores';
 
 const route = useRoute();
+const router = useRouter();
 const gameData = useGameData();
 const characterDrawerStore = useCharacterDrawer();
 const mvuSettings = useMvuSettings();
+const uiSettings = useUiSettings();
+
+// 开局模式检测
+const isStartupMode = computed(() => gameData.isStartupMode);
+
+// 阻止 watch 自动跳转的标志（当手动导航到特定页面时）
+const skipAutoNavigation = ref(false);
 
 // MVU确认弹窗相关
 const mvuConfirmDialogRef = ref<InstanceType<typeof MvuConfirmDialog> | null>(null);
@@ -185,15 +206,26 @@ const mvuRetryButtonTitle = computed(() => {
   if (mvuSettings.isParsingInProgress) {
     return `点击中断解析 (${mvuSettings.parsingProgress || '解析中...'})`;
   }
+  // 0层时显示不同的提示
+  if (isStartupMode.value) {
+    return '生成开局变量';
+  }
   return '重试额外模型解析';
 });
 
-const navRoutes = routes;
-const currentRoute = computed(() => routes.find(r => r.path === route.path));
+// 根据开局模式切换导航路由
+const navRoutes = computed(() => (isStartupMode.value ? startupRoutes : routes));
+const currentRoute = computed(() => {
+  const allNavRoutes = isStartupMode.value ? startupRoutes : routes;
+  return allNavRoutes.find(r => r.path === route.path);
+});
 const themeClass = computed(() => {
   const theme = currentRoute.value?.meta?.theme || 'default';
   return theme !== 'default' ? `theme-${theme}` : '';
 });
+
+// 动态宽长比
+const aspectRatioStyle = computed(() => uiSettings.getAspectRatioCss());
 
 function getNavBadge(name: string): number | null {
   switch (name) {
@@ -245,6 +277,8 @@ function handleMvuRetry() {
 // MVU确认更新
 function handleMvuConfirm(updateBlock: string) {
   mvuSettings.confirmUpdate(true, updateBlock);
+  // 确认后跳转到全量变量页面，方便用户查看和编辑
+  router.push('/variables');
 }
 
 // MVU取消更新
@@ -262,11 +296,51 @@ function handleBlockCancel() {
   mvuSettings.confirmGenerationBlock(false);
 }
 
+// 监听开局模式变化，自动导航到对应页面
+watch(
+  isStartupMode,
+  (isStartup, wasStartup) => {
+    // 如果已经手动导航，跳过自动跳转
+    if (skipAutoNavigation.value) {
+      return;
+    }
+    if (isStartup && !wasStartup) {
+      // 进入开局模式，导航到开局信息页
+      router.push('/startup-info');
+    } else if (!isStartup && wasStartup) {
+      // 离开开局模式，导航到仪表盘
+      router.push('/');
+    }
+  },
+  { immediate: false },
+);
+
 onMounted(async () => {
   await gameData.loadData();
   gameData.setupEventListeners();
   // 初始化MVU设置
   await mvuSettings.initialize();
+
+  // 检查是否需要跳转到全量变量页（确认更新后）
+  // 注意：标志会在 Variables.vue 页面加载时才清除，避免多次刷新时丢失
+  const api = (window.parent as any)?.ScarletMvu;
+  if (api?.getShouldNavigateToVariables?.()) {
+    console.info('[绯色官途] 检测到确认更新后需要跳转到全量变量页');
+    // 不在这里清除标志！让 Variables.vue 页面加载后再清除
+    // 设置标志阻止 watch 自动跳转
+    skipAutoNavigation.value = true;
+    router.push('/variables');
+    // 延迟后重置标志，以便之后的模式切换仍能正常工作
+    setTimeout(() => {
+      skipAutoNavigation.value = false;
+    }, 500);
+    return;
+  }
+
+  // 根据当前模式导航到正确的初始页面
+  if (isStartupMode.value) {
+    router.push('/startup-info');
+  }
 });
 </script>
 
@@ -276,9 +350,7 @@ onMounted(async () => {
 .app-container {
   display: flex;
   width: 100%;
-  // 使用 aspect-ratio 让高度根据宽度动态调整
-  // 16:10 比例适合大多数显示场景
-  aspect-ratio: 16 / 10;
+  // aspect-ratio 现在通过内联样式动态设置，可在设置页面调整
   background: var(--color-bg-dark);
   overflow: hidden; // 防止内容溢出根容器
 }
@@ -358,12 +430,24 @@ onMounted(async () => {
   &.nav-opportunities i {
     color: #1abc9c;
   }
-  &.nav-variables i {
+  &.nav-variables i,
+  &.nav-variables-startup i {
     color: #7f8c8d;
+  }
+  // 开局模式特有图标颜色
+  &.nav-startup-info i {
+    color: var(--color-romance-light);
   }
 
   &.active i {
     color: var(--color-romance) !important;
+  }
+}
+
+// ═══ 开局模式导航栏样式 ═══
+.sidebar-nav.startup-mode {
+  .nav-list {
+    padding-top: var(--spacing-md);
   }
 }
 
@@ -406,6 +490,12 @@ onMounted(async () => {
   border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(10px);
   flex-shrink: 0;
+
+  // 开局模式header样式
+  &.startup-mode {
+    background: linear-gradient(180deg, rgba(196, 30, 58, 0.08) 0%, rgba(22, 25, 34, 0.95) 100%);
+    border-bottom-color: rgba(196, 30, 58, 0.2);
+  }
 }
 
 .header-left {
@@ -445,6 +535,25 @@ onMounted(async () => {
   .location-display i {
     color: #3498db;
   }
+
+  // 开局模式标题样式
+  &.startup-title {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+// 开局设置标题
+.startup-title-text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--color-romance-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: 2px;
 }
 
 .header-right {
@@ -549,6 +658,22 @@ onMounted(async () => {
       transform: scale(1.05);
     }
   }
+
+  // 开局模式 - 紫色魔法图标 + 闪烁动画
+  &.startup {
+    border-color: var(--color-romance);
+    background: rgba(196, 30, 58, 0.15);
+
+    .startup-icon {
+      color: var(--color-romance);
+      animation: sparkle-startup 2s ease-in-out infinite;
+    }
+
+    &:hover {
+      background: rgba(196, 30, 58, 0.25);
+      transform: scale(1.05);
+    }
+  }
 }
 
 // 中止按钮脉冲动画
@@ -578,6 +703,27 @@ onMounted(async () => {
   }
   60% {
     transform: translateY(-2px);
+  }
+}
+
+// 开局按钮闪烁动画
+@keyframes sparkle-startup {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 0.9;
+    transform: scale(1.05) rotate(-5deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: scale(1.05) rotate(5deg);
   }
 }
 

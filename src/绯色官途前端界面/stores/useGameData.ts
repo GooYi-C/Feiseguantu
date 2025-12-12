@@ -22,6 +22,7 @@ export const useGameData = defineStore('gameData', () => {
   const isDirty = ref(false);
   const lastError = ref<string | null>(null);
   const dataSource = ref<DataSource>('mvu');
+  const currentMessageLayer = ref<number>(0); // 当前消息层数
 
   // ═══ 本地头像缓存 (角色名 -> DataURL) ═══
   const avatarCache = ref<Record<string, string>>({});
@@ -83,6 +84,10 @@ export const useGameData = defineStore('gameData', () => {
   const 危机数量 = computed(() => Object.keys(机遇与危机.value.潜在危机).length);
   const 机遇数量 = computed(() => Object.keys(机遇与危机.value.当前机遇).length);
   const 待办数量 = computed(() => Object.keys(机遇与危机.value.待办事项).length);
+
+  // ─── 开局模式检测 ───
+  // 当前是否处于0层（开局模式）
+  const isStartupMode = computed(() => currentMessageLayer.value === 0);
 
   // ═══ 等待 MVU 变量初始化完成 ═══
   async function waitMvuInitialized(timeoutMs = 5000): Promise<Mvu.MvuData | null> {
@@ -192,6 +197,24 @@ export const useGameData = defineStore('gameData', () => {
     return { data: {}, source: 'mvu' };
   }
 
+  // ═══ 更新当前消息层数 ═══
+  function updateMessageLayer() {
+    try {
+      // 使用酒馆助手API获取最后一条消息的ID
+      const lastMsgId = getLastMessageId();
+      currentMessageLayer.value = lastMsgId;
+      console.info('[绯色官途] 当前消息层数:', lastMsgId);
+    } catch {
+      // 如果API不可用，检查SillyTavern.chat
+      try {
+        const chatLength = SillyTavern?.chat?.length ?? 0;
+        currentMessageLayer.value = chatLength > 0 ? chatLength - 1 : 0;
+      } catch {
+        currentMessageLayer.value = 0;
+      }
+    }
+  }
+
   // ═══ 数据加载 ═══
   async function loadData() {
     loading.value = true;
@@ -204,8 +227,12 @@ export const useGameData = defineStore('gameData', () => {
       initialized.value = true;
       isDirty.value = false;
 
+      // 更新当前消息层数
+      updateMessageLayer();
+
       console.info(`[绯色官途] 从 ${result.source} 加载数据成功`, {
         人物数: Object.keys(rawData.value.人物库).length,
+        当前层数: currentMessageLayer.value,
       });
     } catch (err) {
       lastError.value = err instanceof Error ? err.message : String(err);
@@ -300,6 +327,18 @@ export const useGameData = defineStore('gameData', () => {
         console.info('[绯色官途] MVU 变量更新，同步前端数据');
         rawData.value = GameSchema.parse(variables.stat_data);
       }
+      // 更新消息层数
+      updateMessageLayer();
+    });
+
+    // 监听消息接收事件，更新层数
+    eventOn(tavern_events.MESSAGE_RECEIVED, () => {
+      updateMessageLayer();
+    });
+
+    // 监听消息删除事件，更新层数
+    eventOn(tavern_events.MESSAGE_DELETED, () => {
+      updateMessageLayer();
     });
   }
 
@@ -391,6 +430,7 @@ export const useGameData = defineStore('gameData', () => {
     isDirty,
     lastError,
     dataSource,
+    currentMessageLayer,
 
     // 计算属性
     时空舆情,
@@ -403,6 +443,9 @@ export const useGameData = defineStore('gameData', () => {
     个人资产,
     暗账,
     机遇与危机,
+
+    // 开局模式
+    isStartupMode,
 
     // 统计
     人物总数,
@@ -423,6 +466,7 @@ export const useGameData = defineStore('gameData', () => {
     updateField,
     discardChanges,
     setupEventListeners,
+    updateMessageLayer,
 
     // 人物操作
     addCharacter,

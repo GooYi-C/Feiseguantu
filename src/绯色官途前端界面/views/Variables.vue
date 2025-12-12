@@ -19,6 +19,10 @@
           <i class="fas fa-trash-alt"></i> 清除头像缓存
         </button>
         <button class="save-btn" :disabled="!isDirty" @click="saveAll"><i class="fas fa-save"></i> 保存全部</button>
+        <!-- 开局模式下显示"确认当前开局"按钮 -->
+        <button v-if="isStartupMode" class="startup-btn" @click="showStartupConfirm = true">
+          <i class="fas fa-play-circle"></i> 确认当前开局
+        </button>
       </div>
     </div>
 
@@ -930,20 +934,53 @@
         <button class="btn-danger" @click="confirmClearCache"><i class="fas fa-trash-alt"></i> 确认清除</button>
       </template>
     </Modal>
+
+    <!-- 确认当前开局弹窗 -->
+    <ConfirmDialog
+      v-model="showStartupConfirm"
+      title="确认当前开局"
+      message="确定使用当前变量开始游戏吗？系统将根据当前全局变量快照生成开局剧情。"
+      confirm-text="开始游戏"
+      cancel-text="继续编辑"
+      type="primary"
+      @confirm="confirmStartup"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { klona } from 'klona';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ArrayEditor, Modal, SliderField } from '../components/common';
+import ConfirmDialog from '../components/common/ConfirmDialog.vue';
 import { RecordTable, SectionAccordion } from '../components/variable';
-import { useCharacters, useGameData, useLocalCache } from '../stores';
+import { useCharacters, useGameData, useLocalCache, useMvuSettings } from '../stores';
 import type { GameData } from '../stores/schema';
 
 const gameData = useGameData();
 const characters = useCharacters();
 const localCache = useLocalCache();
+const mvuSettings = useMvuSettings();
+
+// 开局模式检测
+const isStartupMode = computed(() => gameData.isStartupMode);
+
+// 确认当前开局弹窗
+const showStartupConfirm = ref(false);
+
+async function confirmStartup() {
+  showStartupConfirm.value = false;
+  await mvuSettings.confirmStartup();
+}
+
+// 页面加载时清除跳转标志（确认更新后跳转到此页面）
+onMounted(() => {
+  const api = (window.parent as any)?.ScarletMvu;
+  if (api?.getShouldNavigateToVariables?.()) {
+    console.info('[绯色官途] Variables 页面加载，清除跳转标志');
+    api.clearNavigateFlag();
+  }
+});
 
 // 本地编辑副本
 const data = reactive(klona(gameData.rawData));
@@ -1450,6 +1487,34 @@ function confirmClearCache() {
 
   &:hover:not(:disabled) {
     filter: brightness(1.1);
+  }
+}
+
+.startup-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-romance) 0%, var(--color-romance-dark) 100%);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  transition: all var(--transition-fast);
+
+  i {
+    font-size: 16px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    filter: brightness(1.1);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 

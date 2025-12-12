@@ -10,6 +10,14 @@
               <i class="fas fa-code-branch"></i>
               <span>变量更新确认</span>
               <span class="cmd-count">{{ parsedCommands.length }} 条命令</span>
+              <span v-if="hasValidationErrors" class="validation-badge error">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ validationResult.errors.length }} 个验证错误
+              </span>
+              <span v-else class="validation-badge success">
+                <i class="fas fa-check-circle"></i>
+                验证通过
+              </span>
             </div>
             <div class="header-actions">
               <!-- 视图切换 -->
@@ -56,12 +64,37 @@
                 解析预览
               </div>
               <div class="preview-content parsed-preview">
-                <div v-for="(cmd, index) in parsedCommands" :key="index" class="command-item">
-                  <span class="cmd-type" :class="`type-${cmd.type}`">{{ cmd.type }}</span>
-                  <span class="cmd-path">{{ cmd.path }}</span>
-                  <span v-if="cmd.value !== undefined" class="cmd-arrow">→</span>
-                  <span v-if="cmd.value !== undefined" class="cmd-value">{{ formatValue(cmd.value) }}</span>
-                  <span v-if="cmd.reason" class="cmd-reason">// {{ cmd.reason }}</span>
+                <div
+                  v-for="(cmd, index) in parsedCommands"
+                  :key="index"
+                  :ref="el => setCommandRef(el, index)"
+                  class="command-item"
+                  :class="{
+                    'has-error': hasCommandError(cmd),
+                    'current-error': isCurrentError(index),
+                  }"
+                >
+                  <div class="cmd-main">
+                    <span class="cmd-type" :class="`type-${cmd.type}`">{{ cmd.type }}</span>
+                    <span class="cmd-path">{{ cmd.path }}</span>
+                    <span v-if="cmd.value !== undefined" class="cmd-arrow">→</span>
+                    <span
+                      v-if="cmd.value !== undefined"
+                      class="cmd-value"
+                      :class="{ 'value-error': hasCommandError(cmd) }"
+                      >{{ formatValue(cmd.value) }}</span
+                    >
+                    <span v-if="cmd.reason" class="cmd-reason">// {{ cmd.reason }}</span>
+                  </div>
+                  <!-- 验证错误提示 - 显示所有相关错误 -->
+                  <div v-if="hasCommandError(cmd)" class="cmd-errors">
+                    <div v-for="(error, errIdx) in getCommandErrors(cmd)" :key="errIdx" class="cmd-error">
+                      <i class="fas fa-times-circle"></i>
+                      <span class="error-path">{{ error.path }}</span>
+                      <span class="error-message">{{ error.message }}</span>
+                      <span class="expected-type">期望: {{ getExpectedType(error.path) }}</span>
+                    </div>
+                  </div>
                 </div>
                 <div v-if="parsedCommands.length === 0" class="no-commands">
                   <i class="fas fa-exclamation-circle"></i>
@@ -91,15 +124,37 @@
                 <div
                   v-for="(cmd, index) in parsedCommands"
                   :key="index"
+                  :ref="el => setCommandRef(el, index)"
                   class="interactive-item"
-                  :class="`item-${cmd.type}`"
+                  :class="[
+                    `item-${cmd.type}`,
+                    { 'item-error': hasCommandError(cmd) },
+                    { 'current-error': isCurrentError(index) },
+                  ]"
                 >
                   <div class="item-header">
                     <span class="item-type" :class="`type-${cmd.type}`">{{ cmd.type }}</span>
                     <span class="item-path">{{ cmd.path }}</span>
+                    <span
+                      v-if="hasCommandError(cmd)"
+                      class="item-error-icon"
+                      :title="`${getCommandErrors(cmd).length} 个验证错误`"
+                    >
+                      <i class="fas fa-exclamation-triangle"></i>
+                      <span class="error-count">{{ getCommandErrors(cmd).length }}</span>
+                    </span>
                     <button class="btn-delete" title="删除此命令" @click="removeCommand(index)">
                       <i class="fas fa-trash-alt"></i>
                     </button>
+                  </div>
+                  <!-- 验证错误提示 - 显示所有相关错误 -->
+                  <div v-if="hasCommandError(cmd)" class="item-validation-errors">
+                    <div v-for="(error, errIdx) in getCommandErrors(cmd)" :key="errIdx" class="item-validation-error">
+                      <i class="fas fa-times-circle"></i>
+                      <span class="error-field">{{ getFieldName(error.path, cmd.path) }}</span>
+                      <span class="error-msg">{{ error.message }}</span>
+                      <span class="expected-hint">期望: {{ getExpectedType(error.path) }}</span>
+                    </div>
                   </div>
                   <div v-if="cmd.type !== 'delete' && cmd.type !== 'remove' && cmd.type !== 'unset'" class="item-value">
                     <label>新值:</label>
@@ -107,13 +162,16 @@
                       v-if="typeof cmd.value === 'string' || typeof cmd.value === 'number'"
                       type="text"
                       :value="cmd.value"
+                      :class="{ 'input-error': hasCommandError(cmd) }"
                       @input="updateCommandValue(index, ($event.target as HTMLInputElement).value)"
                     />
                     <textarea
                       v-else
                       :value="JSON.stringify(cmd.value, null, 2)"
-                      rows="2"
+                      rows="6"
+                      :class="{ 'input-error': hasCommandError(cmd) }"
                       @input="updateCommandValueJson(index, ($event.target as HTMLTextAreaElement).value)"
+                      @wheel="handleTextareaWheel"
                     ></textarea>
                   </div>
                   <div v-if="cmd.reason" class="item-reason">
@@ -135,7 +193,18 @@
               <i class="fas fa-window-minimize"></i>
               最小化
             </button>
-            <button class="btn-primary" @click="handleConfirm">
+            <!-- 有错误时显示"下一处错误"按钮 -->
+            <button
+              v-if="hasValidationErrors"
+              class="btn-next-error"
+              :title="`跳转到下一处错误 (${currentErrorIndex + 1}/${errorCommandIndices.length})`"
+              @click="goToNextError"
+            >
+              <i class="fas fa-exclamation-circle"></i>
+              下一处错误
+              <span class="error-counter">({{ currentErrorIndex + 1 }}/{{ errorCommandIndices.length }})</span>
+            </button>
+            <button v-else class="btn-primary" title="确认应用变量更新" @click="handleConfirm">
               <i class="fas fa-check"></i>
               确认应用
             </button>
@@ -172,6 +241,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { PendingUpdateData } from '../../stores';
+import { getExpectedTypeDescription, validateCommands, type ValidationError } from '../../utils/zodValidator';
 
 interface Props {
   modelValue: boolean;
@@ -189,10 +259,26 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const editedUpdateBlock = ref('');
+const editedUpdateBlock = ref(''); // 只保存 JSONPatch 内部的 JSON 内容
 const codeEditor = ref<HTMLTextAreaElement | null>(null);
 const viewMode = ref<'code' | 'interactive'>('interactive');
 const showCancelConfirm = ref(false);
+
+// 保存原始 <UpdateVariable>...</UpdateVariable> 完整内容
+const originalUpdateVariable = ref('');
+
+// 错误定位相关
+const currentErrorIndex = ref(0);
+const commandRefs = new Map<number, HTMLElement>();
+
+// 设置命令元素的 ref（处理 Vue template ref 类型）
+function setCommandRef(el: unknown, index: number) {
+  if (el && el instanceof HTMLElement) {
+    commandRefs.set(index, el);
+  } else {
+    commandRefs.delete(index);
+  }
+}
 
 // 解析的命令列表
 interface ParsedCommand {
@@ -300,6 +386,203 @@ const parsedCommands = computed<ParsedCommand[]>(() => {
   return commands;
 });
 
+// ZOD 验证结果
+const validationResult = computed(() => {
+  return validateCommands(parsedCommands.value);
+});
+
+// 是否有验证错误
+const hasValidationErrors = computed(() => !validationResult.value.isValid);
+
+// 获取命令的所有相关验证错误（使用路径前缀匹配）
+// 例如：命令路径 /人物库/刘娜，错误路径 /人物库/刘娜/体系 -> 匹配成功
+function getCommandErrors(cmd: ParsedCommand): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const allErrors = validationResult.value.errors;
+
+  for (const error of allErrors) {
+    // 精确匹配或前缀匹配（错误路径以命令路径开头）
+    if (error.path === cmd.path || error.path.startsWith(cmd.path + '/')) {
+      errors.push(error);
+    }
+  }
+  return errors;
+}
+
+// 获取命令的第一个验证错误（向后兼容）
+function getCommandError(cmd: ParsedCommand): ValidationError | undefined {
+  const errors = getCommandErrors(cmd);
+  return errors.length > 0 ? errors[0] : undefined;
+}
+
+// 检查命令是否有错误
+function hasCommandError(cmd: ParsedCommand): boolean {
+  return getCommandErrors(cmd).length > 0;
+}
+
+// 获取所有有错误的命令索引
+const errorCommandIndices = computed(() => {
+  const indices: number[] = [];
+  parsedCommands.value.forEach((cmd, index) => {
+    if (hasCommandError(cmd)) {
+      indices.push(index);
+    }
+  });
+  return indices;
+});
+
+// 判断某个命令是否是当前定位的错误
+function isCurrentError(index: number): boolean {
+  if (!hasValidationErrors.value || errorCommandIndices.value.length === 0) {
+    return false;
+  }
+  const currentCmdIndex = errorCommandIndices.value[currentErrorIndex.value];
+  return index === currentCmdIndex;
+}
+
+// 跳转到下一个错误（循环）
+function goToNextError() {
+  if (errorCommandIndices.value.length === 0) return;
+
+  // 更新错误索引（循环）
+  currentErrorIndex.value = (currentErrorIndex.value + 1) % errorCommandIndices.value.length;
+
+  // 获取当前错误对应的命令索引
+  const cmdIndex = errorCommandIndices.value[currentErrorIndex.value];
+  const cmd = parsedCommands.value[cmdIndex];
+  const errors = getCommandErrors(cmd);
+  const firstError = errors[0];
+
+  // 获取错误的具体字段名（用于在文本中搜索定位）
+  const errorFieldName = firstError ? getFieldName(firstError.path, cmd.path) : '';
+
+  if (viewMode.value === 'code') {
+    // 代码视图：定位到代码编辑器中的错误位置
+    scrollToErrorInCodeEditor(cmd, errorFieldName);
+  } else {
+    // 交互视图：滚动到命令，并定位到内部 textarea 的错误字段
+    scrollToErrorInInteractiveView(cmdIndex, errorFieldName);
+  }
+}
+
+// 在代码编辑器中定位到错误
+function scrollToErrorInCodeEditor(cmd: ParsedCommand, fieldName: string) {
+  const editor = codeEditor.value;
+  if (!editor) return;
+
+  const content = editor.value;
+
+  // 首先尝试找到命令的路径位置
+  let searchTarget = cmd.path;
+  let position = content.indexOf(`"path": "${searchTarget}"`);
+
+  if (position === -1) {
+    position = content.indexOf(`"path":"${searchTarget}"`);
+  }
+
+  // 如果有具体的错误字段，尝试在该命令附近找到该字段
+  if (position !== -1 && fieldName && fieldName !== '根字段') {
+    // 从命令位置开始，向后搜索字段名
+    const fieldPos = content.indexOf(`"${fieldName}"`, position);
+    if (fieldPos !== -1 && fieldPos < position + 2000) {
+      // 找到了字段，定位到这里
+      position = fieldPos;
+    }
+  }
+
+  if (position !== -1) {
+    // 选中并滚动到该位置
+    editor.focus();
+    editor.setSelectionRange(position, position + (fieldName || searchTarget).length + 2);
+
+    // 计算滚动位置 - 让选中的文本居中
+    const textBefore = content.substring(0, position);
+    const lines = textBefore.split('\n');
+    const lineNumber = lines.length;
+    const lineHeight = 18; // 大约的行高
+    const scrollTop = Math.max(0, (lineNumber - 10) * lineHeight);
+    editor.scrollTop = scrollTop;
+
+    // 添加视觉反馈
+    editor.classList.add('editor-flash');
+    setTimeout(() => editor.classList.remove('editor-flash'), 1000);
+  }
+}
+
+// 在交互视图中定位到错误
+function scrollToErrorInInteractiveView(cmdIndex: number, fieldName: string) {
+  const targetEl = commandRefs.get(cmdIndex);
+  if (!targetEl) return;
+
+  // 滚动到命令元素
+  targetEl.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  });
+
+  // 添加闪烁效果
+  targetEl.classList.add('error-flash');
+  setTimeout(() => {
+    targetEl.classList.remove('error-flash');
+  }, 1000);
+
+  // 尝试定位到内部 textarea 中的错误字段
+  if (fieldName && fieldName !== '根字段') {
+    setTimeout(() => {
+      const textarea = targetEl.querySelector('textarea');
+      if (textarea) {
+        const content = textarea.value;
+        const fieldPos = content.indexOf(`"${fieldName}"`);
+        if (fieldPos !== -1) {
+          // 计算滚动位置
+          const textBefore = content.substring(0, fieldPos);
+          const lines = textBefore.split('\n');
+          const lineNumber = lines.length;
+          const lineHeight = 20; // 大约的行高
+
+          // 滚动 textarea 到字段位置
+          textarea.scrollTop = Math.max(0, (lineNumber - 2) * lineHeight);
+
+          // 选中字段
+          textarea.focus();
+          textarea.setSelectionRange(fieldPos, fieldPos + fieldName.length + 2);
+        }
+      }
+    }, 300); // 等待滚动动画完成
+  }
+}
+
+// 获取预期类型描述
+function getExpectedType(path: string): string {
+  return getExpectedTypeDescription(path);
+}
+
+// 从错误路径中提取相对字段名
+// 例如：errorPath="/人物库/刘娜/体系", cmdPath="/人物库/刘娜" => "体系"
+function getFieldName(errorPath: string, cmdPath: string): string {
+  if (errorPath === cmdPath) {
+    return '根字段';
+  }
+  const relative = errorPath.slice(cmdPath.length);
+  // 移除开头的斜杠
+  return relative.startsWith('/') ? relative.slice(1) : relative;
+}
+
+// 处理 textarea 滚动 - 减小滚动步长
+function handleTextareaWheel(event: WheelEvent) {
+  const target = event.target as HTMLTextAreaElement;
+  if (!target) return;
+
+  // 减小滚动步长（原来的 1/4）
+  const scrollAmount = event.deltaY * 0.25;
+
+  // 阻止默认滚动
+  event.preventDefault();
+
+  // 应用自定义滚动
+  target.scrollTop += scrollAmount;
+}
+
 // 格式化值显示 - 完整显示，不截断
 function formatValue(value: unknown): string {
   if (typeof value === 'string') {
@@ -375,7 +658,9 @@ function restore() {
 }
 
 function handleConfirm() {
-  emit('confirm', editedUpdateBlock.value);
+  // 重建完整的 UpdateVariable 块，包含修改后的 JSONPatch
+  const finalUpdateBlock = rebuildFinalUpdateBlock();
+  emit('confirm', finalUpdateBlock);
   emit('update:modelValue', false);
   emit('update:isMinimized', false);
 }
@@ -391,15 +676,69 @@ function confirmCancel() {
   emit('update:isMinimized', false);
 }
 
+// 从 UpdateVariable 块中提取 JSONPatch 内容
+function extractJsonPatch(updateBlock: string): string {
+  // 保存原始完整内容
+  originalUpdateVariable.value = updateBlock;
+
+  // 尝试提取 <JSONPatch>...</JSONPatch> 内容
+  const jsonPatchMatch = updateBlock.match(/<JSONPatch>([\s\S]*?)<\/JSONPatch>/i);
+  if (jsonPatchMatch) {
+    return jsonPatchMatch[1].trim();
+  }
+
+  // 如果没有 JSONPatch 标签，尝试提取 JSON 数组
+  const jsonArrayMatch = updateBlock.match(/\[[\s\S]*\]/);
+  if (jsonArrayMatch) {
+    return jsonArrayMatch[0];
+  }
+
+  // 返回原始内容
+  return updateBlock;
+}
+
+// 将修改后的 JSONPatch 内容合并回原始 UpdateVariable 块
+function rebuildFinalUpdateBlock(): string {
+  const original = originalUpdateVariable.value;
+  const editedJson = editedUpdateBlock.value;
+
+  // 如果原始内容包含 <JSONPatch> 标签，替换其中的内容
+  if (original.includes('<JSONPatch>')) {
+    return original.replace(/<JSONPatch>[\s\S]*?<\/JSONPatch>/i, `<JSONPatch>\n${editedJson}\n</JSONPatch>`);
+  }
+
+  // 如果原始内容包含 <UpdateVariable> 但没有 <JSONPatch>，添加 JSONPatch 标签
+  if (original.includes('<UpdateVariable>')) {
+    // 在 </UpdateVariable> 前插入 JSONPatch
+    return original.replace(/<\/UpdateVariable>/i, `<JSONPatch>\n${editedJson}\n</JSONPatch>\n</UpdateVariable>`);
+  }
+
+  // 否则包装完整结构
+  return `<UpdateVariable>\n<JSONPatch>\n${editedJson}\n</JSONPatch>\n</UpdateVariable>`;
+}
+
 // 监听数据变化
 watch(
   () => props.pendingData,
   newData => {
     if (newData) {
-      editedUpdateBlock.value = newData.updateBlock;
+      // 提取 JSONPatch 内容供编辑
+      editedUpdateBlock.value = extractJsonPatch(newData.updateBlock);
     }
   },
   { immediate: true },
+);
+
+// 当错误列表变化时，重置当前错误索引
+watch(
+  () => errorCommandIndices.value,
+  newIndices => {
+    if (newIndices.length === 0) {
+      currentErrorIndex.value = 0;
+    } else if (currentErrorIndex.value >= newIndices.length) {
+      currentErrorIndex.value = 0;
+    }
+  },
 );
 
 // 暴露restore方法给父组件
@@ -461,6 +800,37 @@ defineExpose({ restore });
     background: var(--color-bg-dark);
     padding: 2px 8px;
     border-radius: var(--radius-sm);
+  }
+
+  .validation-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+
+    &.error {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--color-danger);
+      animation: pulse-error 2s infinite;
+    }
+
+    &.success {
+      background: rgba(74, 193, 142, 0.15);
+      color: var(--color-success);
+    }
+  }
+
+  @keyframes pulse-error {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -567,11 +937,30 @@ defineExpose({ restore });
   line-height: 1.6;
   color: var(--color-text-primary);
   resize: vertical;
-  transition: border-color var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &:focus {
     border-color: var(--color-gold);
     outline: none;
+  }
+
+  // 定位错误时的闪烁效果
+  &.editor-flash {
+    animation: editor-flash-anim 0.5s ease-in-out 2;
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.3);
+  }
+}
+
+@keyframes editor-flash-anim {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 107, 107, 0.5);
   }
 }
 
@@ -666,6 +1055,96 @@ defineExpose({ restore });
   }
 }
 
+// 验证错误样式
+.command-item {
+  &.has-error {
+    background: rgba(255, 107, 107, 0.08);
+    border-left: 3px solid var(--color-danger);
+    padding-left: var(--spacing-sm);
+    margin-left: calc(-1 * var(--spacing-sm));
+  }
+
+  // 当前定位的错误 - 更明显的高亮
+  &.current-error {
+    background: rgba(255, 107, 107, 0.2) !important;
+    border-left: 4px solid var(--color-danger) !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3);
+    position: relative;
+
+    &::before {
+      content: '→';
+      position: absolute;
+      left: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-danger);
+      font-weight: bold;
+      font-size: 16px;
+    }
+  }
+
+  // 闪烁效果
+  &.error-flash {
+    animation: error-flash-anim 0.5s ease-in-out 2;
+  }
+
+  .cmd-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .value-error {
+    color: var(--color-danger) !important;
+    text-decoration: line-through;
+    opacity: 0.8;
+  }
+
+  .cmd-errors {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+  }
+
+  .cmd-error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+
+    i {
+      color: var(--color-danger);
+      flex-shrink: 0;
+    }
+
+    .error-path {
+      color: var(--color-danger);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      background: rgba(255, 107, 107, 0.15);
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    .error-message {
+      color: var(--color-danger);
+      font-weight: 500;
+    }
+
+    .expected-type {
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin-left: auto;
+    }
+  }
+}
+
 // ═══ Interactive View ═══
 .no-commands-card {
   text-align: center;
@@ -739,6 +1218,132 @@ defineExpose({ restore });
   &.item-insert {
     border-left: 3px solid var(--color-info);
   }
+
+  // 验证错误状态
+  &.item-error {
+    border-color: var(--color-danger) !important;
+    border-left: 3px solid var(--color-danger) !important;
+    background: rgba(255, 107, 107, 0.05);
+
+    &:hover {
+      border-color: var(--color-danger) !important;
+    }
+  }
+
+  // 当前定位的错误 - 更明显的高亮
+  &.current-error {
+    border-color: var(--color-danger) !important;
+    border-left: 4px solid var(--color-danger) !important;
+    background: rgba(255, 107, 107, 0.15) !important;
+    box-shadow:
+      0 0 0 3px rgba(255, 107, 107, 0.25),
+      0 4px 12px rgba(255, 107, 107, 0.2);
+    transform: scale(1.01);
+    position: relative;
+
+    &::after {
+      content: '当前错误';
+      position: absolute;
+      top: -10px;
+      right: 10px;
+      background: var(--color-danger);
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+  }
+
+  // 闪烁效果
+  &.error-flash {
+    animation: error-flash-anim 0.5s ease-in-out 2;
+  }
+}
+
+// 错误闪烁动画
+@keyframes error-flash-anim {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(255, 107, 107, 0.5),
+      0 0 20px rgba(255, 107, 107, 0.3);
+  }
+}
+
+.item-error-icon {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-danger);
+  animation: pulse-error 2s infinite;
+
+  .error-count {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--color-danger);
+    color: white;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+}
+
+.item-validation-errors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.item-validation-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+
+  i {
+    color: var(--color-danger);
+    flex-shrink: 0;
+  }
+
+  .error-field {
+    color: var(--color-danger);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    background: rgba(255, 107, 107, 0.2);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .error-msg {
+    color: var(--color-danger);
+  }
+
+  .expected-hint {
+    color: var(--color-text-muted);
+    font-style: italic;
+    font-size: 11px;
+    margin-left: auto;
+  }
+}
+
+.input-error {
+  border-color: var(--color-danger) !important;
+  background: rgba(255, 107, 107, 0.05) !important;
+
+  &:focus {
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2) !important;
+  }
 }
 
 .item-header {
@@ -809,7 +1414,29 @@ defineExpose({ restore });
 
   textarea {
     resize: vertical;
-    min-height: 60px;
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+
+    // 优化滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--color-bg-dark);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-text-muted);
+      border-radius: 4px;
+
+      &:hover {
+        background: var(--color-text-secondary);
+      }
+    }
   }
 }
 
@@ -880,6 +1507,29 @@ defineExpose({ restore });
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+.btn-next-error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-danger);
+  border: none;
+  color: white;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+
+  .error-counter {
+    font-size: 12px;
+    opacity: 0.9;
   }
 }
 

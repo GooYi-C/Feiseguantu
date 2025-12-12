@@ -18,16 +18,10 @@
           <div class="setting-item toggle-item">
             <div class="setting-info">
               <span class="setting-label">启用额外模型解析</span>
-              <span class="setting-desc">
-                开启后使用独立模型解析变量更新，关闭则随AI输出
-              </span>
+              <span class="setting-desc"> 开启后使用独立模型解析变量更新，关闭则随AI输出 </span>
             </div>
             <label class="toggle-switch">
-              <input
-                type="checkbox"
-                :checked="mvuSettings.isEnabled"
-                @change="handleToggleExtraModel"
-              />
+              <input type="checkbox" :checked="mvuSettings.isEnabled" @change="handleToggleExtraModel" />
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -49,17 +43,9 @@
           <div class="section-header">
             <h2><i class="fas fa-plug"></i> API配置</h2>
             <div v-if="!mvuSettings.settings.useMainApi" class="profile-controls">
-              <select
-                v-model="selectedProfile"
-                class="profile-select"
-                @change="handleProfileChange"
-              >
+              <select v-model="selectedProfile" class="profile-select" @change="handleProfileChange">
                 <option value="默认">默认配置</option>
-                <option
-                  v-for="profile in mvuSettings.savedProfiles"
-                  :key="profile.name"
-                  :value="profile.name"
-                >
+                <option v-for="profile in mvuSettings.savedProfiles" :key="profile.name" :value="profile.name">
                   {{ profile.name }}
                 </option>
               </select>
@@ -82,16 +68,10 @@
             <div class="setting-item toggle-item">
               <div class="setting-info">
                 <span class="setting-label">与插头相同</span>
-                <span class="setting-desc">
-                  使用酒馆主API进行变量解析，关闭后可配置独立API
-                </span>
+                <span class="setting-desc"> 使用酒馆主API进行变量解析，关闭后可配置独立API </span>
               </div>
               <label class="toggle-switch">
-                <input
-                  type="checkbox"
-                  :checked="mvuSettings.settings.useMainApi"
-                  @change="handleToggleUseMainApi"
-                />
+                <input type="checkbox" :checked="mvuSettings.settings.useMainApi" @change="handleToggleUseMainApi" />
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -150,23 +130,12 @@
                       <option value="" disabled>
                         {{ mvuSettings.modelList.length > 0 ? '请选择模型' : '请先获取模型列表' }}
                       </option>
-                      <option
-                        v-for="model in mvuSettings.modelList"
-                        :key="model"
-                        :value="model"
-                      >
+                      <option v-for="model in mvuSettings.modelList" :key="model" :value="model">
                         {{ model }}
                       </option>
                     </select>
-                    <button
-                      class="btn-fetch"
-                      :disabled="mvuSettings.isLoadingModels"
-                      @click="handleFetchModels"
-                    >
-                      <i
-                        class="fas"
-                        :class="mvuSettings.isLoadingModels ? 'fa-spinner fa-spin' : 'fa-sync'"
-                      ></i>
+                    <button class="btn-fetch" :disabled="mvuSettings.isLoadingModels" @click="handleFetchModels">
+                      <i class="fas" :class="mvuSettings.isLoadingModels ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
                       获取列表
                     </button>
                   </div>
@@ -292,6 +261,76 @@
         </section>
       </Transition>
 
+      <!-- 界面设置 -->
+      <section class="settings-section">
+        <div class="section-header">
+          <h2><i class="fas fa-desktop"></i> 界面设置</h2>
+        </div>
+        <div class="section-body">
+          <!-- 宽长比设置 -->
+          <div class="setting-item">
+            <label class="setting-label">
+              <i class="fas fa-expand-arrows-alt"></i>
+              页面宽长比
+            </label>
+            <span class="setting-desc"> 调整界面的宽高比例（不影响实际尺寸，由酒馆窗口决定） </span>
+
+            <!-- 预设选择 -->
+            <div class="aspect-ratio-presets">
+              <button
+                v-for="preset in uiSettings.presets"
+                :key="`${preset.width}:${preset.height}`"
+                class="preset-btn"
+                :class="{
+                  active:
+                    uiSettings.settings.aspectRatio.width === preset.width &&
+                    uiSettings.settings.aspectRatio.height === preset.height,
+                }"
+                @click="handlePresetSelect(preset.width, preset.height)"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+
+            <!-- 自定义宽长比 -->
+            <div class="custom-aspect-ratio">
+              <div class="aspect-input-group">
+                <label class="aspect-input-label">宽度</label>
+                <input
+                  v-model.number="customAspectWidth"
+                  type="number"
+                  class="aspect-input"
+                  min="1"
+                  step="1"
+                  @change="handleCustomAspectChange"
+                />
+              </div>
+              <span class="aspect-separator">:</span>
+              <div class="aspect-input-group">
+                <label class="aspect-input-label">高度</label>
+                <input
+                  v-model.number="customAspectHeight"
+                  type="number"
+                  class="aspect-input"
+                  min="1"
+                  step="1"
+                  @change="handleCustomAspectChange"
+                />
+              </div>
+              <button class="btn-reset" title="重置为默认" @click="handleResetAspectRatio">
+                <i class="fas fa-undo"></i>
+              </button>
+            </div>
+
+            <!-- 当前比例显示 -->
+            <div class="current-ratio-display">
+              当前比例：{{ uiSettings.settings.aspectRatio.width }}:{{ uiSettings.settings.aspectRatio.height }}
+              <span v-if="!isPresetRatio" class="custom-badge">自定义</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 脚本状态提示 -->
       <div v-if="!mvuSettings.isScriptLoaded" class="script-warning">
         <i class="fas fa-exclamation-triangle"></i>
@@ -303,9 +342,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useMvuSettings } from '../stores';
+import { useMvuSettings, useUiSettings } from '../stores';
 
 const mvuSettings = useMvuSettings();
+const uiSettings = useUiSettings();
 
 // 本地配置状态 (用于表单编辑)
 const localConfig = reactive({
@@ -322,6 +362,15 @@ const localConfig = reactive({
 const showApiKey = ref(false);
 const showAdvanced = ref(false);
 const selectedProfile = ref('默认');
+
+// 宽长比设置
+const customAspectWidth = ref(uiSettings.settings.aspectRatio.width);
+const customAspectHeight = ref(uiSettings.settings.aspectRatio.height);
+
+// 计算是否为预设比例
+const isPresetRatio = computed(() =>
+  uiSettings.isPreset(uiSettings.settings.aspectRatio.width, uiSettings.settings.aspectRatio.height),
+);
 
 // 状态计算
 const statusClass = computed(() => {
@@ -418,6 +467,29 @@ async function promptProfileName(): Promise<string | null> {
   return result as string | null;
 }
 
+// 宽长比相关事件处理
+function handlePresetSelect(width: number, height: number) {
+  customAspectWidth.value = width;
+  customAspectHeight.value = height;
+  uiSettings.updateAspectRatio(width, height);
+  toastr.success(`宽长比已设置为 ${width}:${height}`, '[绯色官途]');
+}
+
+function handleCustomAspectChange() {
+  // 确保输入有效
+  if (customAspectWidth.value > 0 && customAspectHeight.value > 0) {
+    uiSettings.updateAspectRatio(customAspectWidth.value, customAspectHeight.value);
+    toastr.success(`宽长比已设置为 ${customAspectWidth.value}:${customAspectHeight.value}`, '[绯色官途]');
+  }
+}
+
+function handleResetAspectRatio() {
+  uiSettings.resetToDefaults();
+  customAspectWidth.value = uiSettings.settings.aspectRatio.width;
+  customAspectHeight.value = uiSettings.settings.aspectRatio.height;
+  toastr.info('宽长比已重置为默认值 (16:10)', '[绯色官途]');
+}
+
 // 监听设置变化
 watch(
   () => mvuSettings.settings,
@@ -427,10 +499,22 @@ watch(
   { deep: true },
 );
 
+// 监听宽长比设置变化
+watch(
+  () => uiSettings.settings.aspectRatio,
+  newRatio => {
+    customAspectWidth.value = newRatio.width;
+    customAspectHeight.value = newRatio.height;
+  },
+  { deep: true },
+);
+
 onMounted(async () => {
   await mvuSettings.initialize();
   mvuSettings.checkScriptLoaded();
   syncLocalConfig();
+  // 加载UI设置
+  uiSettings.loadSettings();
 });
 </script>
 
@@ -916,6 +1000,141 @@ input:checked + .toggle-slider {
   }
 }
 
+// ═══ 宽长比设置 ═══
+.aspect-ratio-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.preset-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    border-color: var(--color-text-muted);
+  }
+
+  &.active {
+    background: var(--color-gold);
+    color: var(--color-bg-dark);
+    border-color: var(--color-gold);
+    font-weight: 600;
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+}
+
+.custom-aspect-ratio {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.aspect-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+  max-width: 120px;
+}
+
+.aspect-input-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.aspect-input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-family: var(--font-mono);
+  transition: border-color var(--transition-fast);
+
+  &:focus {
+    border-color: var(--color-gold);
+    outline: none;
+  }
+
+  // 移除数字输入框的上下箭头（Chrome, Safari, Edge, Opera）
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  // 移除数字输入框的上下箭头（Firefox）
+  &[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+.aspect-separator {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding-bottom: var(--spacing-sm);
+  user-select: none;
+}
+
+.btn-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+  }
+}
+
+.current-ratio-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+
+  .custom-badge {
+    padding: 2px 8px;
+    background: var(--color-gold);
+    color: var(--color-bg-dark);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+}
+
 // ═══ Transitions ═══
 .fade-enter-active,
 .fade-leave-active {
@@ -944,4 +1163,3 @@ input:checked + .toggle-slider {
   max-height: 500px;
 }
 </style>
-

@@ -10,6 +10,7 @@ const AssetsSecrets = () => import('./views/AssetsSecrets.vue');
 const Opportunities = () => import('./views/Opportunities.vue');
 const Variables = () => import('./views/Variables.vue');
 const Settings = () => import('./views/Settings.vue');
+const StartupInfo = () => import('./views/StartupInfo.vue');
 
 // 路由配置 - 按逻辑分类与信息量密度排序
 // 注：scene 路由已移除，其内容将合并到 Dashboard
@@ -17,6 +18,24 @@ const Settings = () => import('./views/Settings.vue');
 // 注：assets 和 secrets 路由已合并为 assets-secrets（任务 3.1/3.6）
 // 注：variables 移至末尾（高级用户功能）
 // 注：settings 为顶部状态栏独立入口，不在侧边导航栏显示
+
+// 开局模式路由（0层时显示）
+export const startupRoutes: RouteRecordRaw[] = [
+  {
+    path: '/startup-info',
+    name: 'startup-info',
+    component: StartupInfo,
+    meta: { title: '开局信息', icon: 'fa-scroll', theme: 'startup' },
+  },
+  {
+    path: '/variables',
+    name: 'variables-startup',
+    component: Variables,
+    meta: { title: '全量变量', icon: 'fa-database', theme: 'variables' },
+  },
+];
+
+// 正常游戏模式路由
 export const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -77,8 +96,8 @@ export const settingsRoute: RouteRecordRaw = {
   meta: { title: '设置', icon: 'fa-cog', theme: 'settings' },
 };
 
-// 所有路由（包含设置页面）
-export const allRoutes: RouteRecordRaw[] = [...routes, settingsRoute];
+// 所有路由（包含设置页面和开局路由）
+export const allRoutes: RouteRecordRaw[] = [...routes, ...startupRoutes, settingsRoute];
 
 const router = createRouter({
   history: createMemoryHistory(),
