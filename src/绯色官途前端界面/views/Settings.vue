@@ -48,7 +48,7 @@
         <section v-if="mvuSettings.isEnabled" class="settings-section api-section">
           <div class="section-header">
             <h2><i class="fas fa-plug"></i> API配置</h2>
-            <div class="profile-controls">
+            <div v-if="!mvuSettings.settings.useMainApi" class="profile-controls">
               <select
                 v-model="selectedProfile"
                 class="profile-select"
@@ -78,190 +78,217 @@
           </div>
 
           <div class="section-body">
-            <!-- API地址 -->
-            <div class="setting-item">
-              <label class="setting-label">
-                <i class="fas fa-link"></i>
-                API地址
-              </label>
-              <input
-                v-model="localConfig.apiUrl"
-                type="text"
-                class="setting-input"
-                placeholder="http://localhost:1234/v1"
-                @blur="handleConfigChange"
-              />
-            </div>
-
-            <!-- API密钥 -->
-            <div class="setting-item">
-              <label class="setting-label">
-                <i class="fas fa-key"></i>
-                API密钥
-              </label>
-              <div class="input-with-toggle">
+            <!-- 与插头相同开关 -->
+            <div class="setting-item toggle-item">
+              <div class="setting-info">
+                <span class="setting-label">与插头相同</span>
+                <span class="setting-desc">
+                  使用酒馆主API进行变量解析，关闭后可配置独立API
+                </span>
+              </div>
+              <label class="toggle-switch">
                 <input
-                  v-model="localConfig.apiKey"
-                  :type="showApiKey ? 'text' : 'password'"
-                  class="setting-input"
-                  placeholder="留空表示无需密钥"
-                  @blur="handleConfigChange"
+                  type="checkbox"
+                  :checked="mvuSettings.settings.useMainApi"
+                  @change="handleToggleUseMainApi"
                 />
-                <button class="btn-toggle" @click="showApiKey = !showApiKey">
-                  <i :class="showApiKey ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- 模型选择 -->
-            <div class="setting-item">
-              <label class="setting-label">
-                <i class="fas fa-microchip"></i>
-                模型
+                <span class="toggle-slider"></span>
               </label>
-              <div class="model-selector">
-                <select
-                  v-model="localConfig.modelName"
-                  class="setting-select"
-                  :disabled="mvuSettings.modelList.length === 0"
-                  @change="handleModelSelect"
-                >
-                  <option value="" disabled>
-                    {{ mvuSettings.modelList.length > 0 ? '请选择模型' : '请先获取模型列表' }}
-                  </option>
-                  <option
-                    v-for="model in mvuSettings.modelList"
-                    :key="model"
-                    :value="model"
-                  >
-                    {{ model }}
-                  </option>
-                </select>
-                <button
-                  class="btn-fetch"
-                  :disabled="mvuSettings.isLoadingModels"
-                  @click="handleFetchModels"
-                >
-                  <i
-                    class="fas"
-                    :class="mvuSettings.isLoadingModels ? 'fa-spinner fa-spin' : 'fa-sync'"
-                  ></i>
-                  获取列表
-                </button>
-              </div>
-              <span v-if="mvuSettings.modelListError" class="setting-error">
-                {{ mvuSettings.modelListError }}
-              </span>
             </div>
 
-            <!-- 高级参数 (可折叠) -->
-            <div class="advanced-params">
-              <button class="btn-expand" @click="showAdvanced = !showAdvanced">
-                <i :class="showAdvanced ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-                高级参数
-              </button>
+            <!-- 自定义API配置（仅在不使用主API时显示） -->
+            <Transition name="expand">
+              <div v-if="!mvuSettings.settings.useMainApi" class="custom-api-config">
+                <!-- API地址 -->
+                <div class="setting-item">
+                  <label class="setting-label">
+                    <i class="fas fa-link"></i>
+                    API地址
+                  </label>
+                  <input
+                    v-model="localConfig.apiUrl"
+                    type="text"
+                    class="setting-input"
+                    placeholder="http://localhost:1234/v1"
+                    @blur="handleConfigChange"
+                  />
+                </div>
 
-              <Transition name="expand">
-                <div v-if="showAdvanced" class="advanced-content">
-                  <!-- 最大Token -->
-                  <div class="setting-item">
-                    <label class="setting-label">最大回复Token</label>
+                <!-- API密钥 -->
+                <div class="setting-item">
+                  <label class="setting-label">
+                    <i class="fas fa-key"></i>
+                    API密钥
+                  </label>
+                  <div class="input-with-toggle">
                     <input
-                      v-model.number="localConfig.maxTokens"
-                      type="number"
+                      v-model="localConfig.apiKey"
+                      :type="showApiKey ? 'text' : 'password'"
                       class="setting-input"
-                      min="1"
-                      step="128"
+                      placeholder="留空表示无需密钥"
                       @blur="handleConfigChange"
                     />
-                  </div>
-
-                  <!-- 温度 -->
-                  <div class="setting-item">
-                    <label class="setting-label">温度 (0-2)</label>
-                    <div class="slider-input">
-                      <input
-                        v-model.number="localConfig.temperature"
-                        type="range"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        @change="handleConfigChange"
-                      />
-                      <span class="slider-value">{{ localConfig.temperature.toFixed(1) }}</span>
-                    </div>
-                  </div>
-
-                  <!-- Top P -->
-                  <div class="setting-item">
-                    <label class="setting-label">Top P (0-1)</label>
-                    <div class="slider-input">
-                      <input
-                        v-model.number="localConfig.topP"
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        @change="handleConfigChange"
-                      />
-                      <span class="slider-value">{{ localConfig.topP.toFixed(2) }}</span>
-                    </div>
-                  </div>
-
-                  <!-- 频率惩罚 -->
-                  <div class="setting-item">
-                    <label class="setting-label">频率惩罚 (-2 ~ 2)</label>
-                    <div class="slider-input">
-                      <input
-                        v-model.number="localConfig.frequencyPenalty"
-                        type="range"
-                        min="-2"
-                        max="2"
-                        step="0.1"
-                        @change="handleConfigChange"
-                      />
-                      <span class="slider-value">{{ localConfig.frequencyPenalty.toFixed(1) }}</span>
-                    </div>
-                  </div>
-
-                  <!-- 存在惩罚 -->
-                  <div class="setting-item">
-                    <label class="setting-label">存在惩罚 (-2 ~ 2)</label>
-                    <div class="slider-input">
-                      <input
-                        v-model.number="localConfig.presencePenalty"
-                        type="range"
-                        min="-2"
-                        max="2"
-                        step="0.1"
-                        @change="handleConfigChange"
-                      />
-                      <span class="slider-value">{{ localConfig.presencePenalty.toFixed(1) }}</span>
-                    </div>
+                    <button class="btn-toggle" @click="showApiKey = !showApiKey">
+                      <i :class="showApiKey ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                    </button>
                   </div>
                 </div>
-              </Transition>
-            </div>
+
+                <!-- 模型选择 -->
+                <div class="setting-item">
+                  <label class="setting-label">
+                    <i class="fas fa-microchip"></i>
+                    模型
+                  </label>
+                  <div class="model-selector">
+                    <select
+                      v-model="localConfig.modelName"
+                      class="setting-select"
+                      :disabled="mvuSettings.modelList.length === 0"
+                      @change="handleModelSelect"
+                    >
+                      <option value="" disabled>
+                        {{ mvuSettings.modelList.length > 0 ? '请选择模型' : '请先获取模型列表' }}
+                      </option>
+                      <option
+                        v-for="model in mvuSettings.modelList"
+                        :key="model"
+                        :value="model"
+                      >
+                        {{ model }}
+                      </option>
+                    </select>
+                    <button
+                      class="btn-fetch"
+                      :disabled="mvuSettings.isLoadingModels"
+                      @click="handleFetchModels"
+                    >
+                      <i
+                        class="fas"
+                        :class="mvuSettings.isLoadingModels ? 'fa-spinner fa-spin' : 'fa-sync'"
+                      ></i>
+                      获取列表
+                    </button>
+                  </div>
+                  <span v-if="mvuSettings.modelListError" class="setting-error">
+                    {{ mvuSettings.modelListError }}
+                  </span>
+                </div>
+
+                <!-- 高级参数 (可折叠) -->
+                <div class="advanced-params">
+                  <button class="btn-expand" @click="showAdvanced = !showAdvanced">
+                    <i :class="showAdvanced ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+                    高级参数
+                  </button>
+
+                  <Transition name="expand">
+                    <div v-if="showAdvanced" class="advanced-content">
+                      <!-- 最大Token -->
+                      <div class="setting-item">
+                        <label class="setting-label">最大回复Token</label>
+                        <input
+                          v-model.number="localConfig.maxTokens"
+                          type="number"
+                          class="setting-input"
+                          min="1"
+                          step="128"
+                          @blur="handleConfigChange"
+                        />
+                      </div>
+
+                      <!-- 温度 -->
+                      <div class="setting-item">
+                        <label class="setting-label">温度 (0-2)</label>
+                        <div class="slider-input">
+                          <input
+                            v-model.number="localConfig.temperature"
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            @change="handleConfigChange"
+                          />
+                          <span class="slider-value">{{ localConfig.temperature.toFixed(1) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Top P -->
+                      <div class="setting-item">
+                        <label class="setting-label">Top P (0-1)</label>
+                        <div class="slider-input">
+                          <input
+                            v-model.number="localConfig.topP"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            @change="handleConfigChange"
+                          />
+                          <span class="slider-value">{{ localConfig.topP.toFixed(2) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- 频率惩罚 -->
+                      <div class="setting-item">
+                        <label class="setting-label">频率惩罚 (-2 ~ 2)</label>
+                        <div class="slider-input">
+                          <input
+                            v-model.number="localConfig.frequencyPenalty"
+                            type="range"
+                            min="-2"
+                            max="2"
+                            step="0.1"
+                            @change="handleConfigChange"
+                          />
+                          <span class="slider-value">{{ localConfig.frequencyPenalty.toFixed(1) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- 存在惩罚 -->
+                      <div class="setting-item">
+                        <label class="setting-label">存在惩罚 (-2 ~ 2)</label>
+                        <div class="slider-input">
+                          <input
+                            v-model.number="localConfig.presencePenalty"
+                            type="range"
+                            min="-2"
+                            max="2"
+                            step="0.1"
+                            @change="handleConfigChange"
+                          />
+                          <span class="slider-value">{{ localConfig.presencePenalty.toFixed(1) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Transition>
+                </div>
+              </div>
+            </Transition>
           </div>
         </section>
       </Transition>
 
-      <!-- Prompt管理器 -->
+      <!-- 世界书配置说明 -->
       <Transition name="fade">
-        <section v-if="mvuSettings.isEnabled" class="settings-section prompt-section">
+        <section v-if="mvuSettings.isEnabled" class="settings-section info-section">
           <div class="section-header">
-            <h2><i class="fas fa-file-alt"></i> Prompt 配置</h2>
-            <button class="btn-expand-section" @click="showPromptManager = !showPromptManager">
-              <i :class="showPromptManager ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-              {{ showPromptManager ? '收起' : '展开' }}
-            </button>
+            <h2><i class="fas fa-book"></i> 世界书配置说明</h2>
           </div>
-
-          <Transition name="expand">
-            <div v-if="showPromptManager" class="section-body">
-              <PromptManager />
+          <div class="section-body">
+            <div class="info-box">
+              <i class="fas fa-info-circle"></i>
+              <div class="info-content">
+                <p><strong>世界书条目自动过滤规则：</strong></p>
+                <ul>
+                  <li>带 <code>[mvu_update]</code> 的条目 → 仅发送给额外模型(LLM2)</li>
+                  <li>带 <code>[mvu_plot]</code> 的条目 → 仅发送给主模型(LLM1)</li>
+                  <li>两者都不带的条目 → 同时发送给LLM1和LLM2</li>
+                </ul>
+                <p class="info-hint">请按照上述规则在世界书条目名称中添加标签，系统将自动处理Prompt分发。</p>
+              </div>
             </div>
-          </Transition>
+          </div>
         </section>
       </Transition>
 
@@ -276,7 +303,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { PromptManager } from '../components/mvu';
 import { useMvuSettings } from '../stores';
 
 const mvuSettings = useMvuSettings();
@@ -295,18 +321,21 @@ const localConfig = reactive({
 
 const showApiKey = ref(false);
 const showAdvanced = ref(false);
-const showPromptManager = ref(false);
 const selectedProfile = ref('默认');
 
 // 状态计算
 const statusClass = computed(() => {
-  if (mvuSettings.isParsingInProgress) return 'status-parsing';
+  // 区分正在解析和等待确认两种状态
+  if (mvuSettings.isParsingInProgress && !mvuSettings.pendingUpdate) return 'status-parsing';
+  if (mvuSettings.pendingUpdate) return 'status-pending';
   if (mvuSettings.isScriptLoaded) return 'status-ready';
   return 'status-warning';
 });
 
 const statusText = computed(() => {
-  if (mvuSettings.isParsingInProgress) return '正在解析变量...';
+  // 区分正在解析和等待确认两种状态
+  if (mvuSettings.isParsingInProgress && !mvuSettings.pendingUpdate) return '正在解析变量...';
+  if (mvuSettings.pendingUpdate) return '等待确认更新...';
   if (mvuSettings.isScriptLoaded) return '已就绪';
   return '脚本未加载';
 });
@@ -329,6 +358,12 @@ function syncLocalConfig() {
 function handleToggleExtraModel(event: Event) {
   const target = event.target as HTMLInputElement;
   mvuSettings.toggleExtraModelParsing(target.checked);
+}
+
+function handleToggleUseMainApi(event: Event) {
+  const target = event.target as HTMLInputElement;
+  mvuSettings.settings.useMainApi = target.checked;
+  mvuSettings.saveSettings();
 }
 
 function handleConfigChange() {
@@ -608,6 +643,11 @@ input:checked + .toggle-slider {
       animation: pulse 1s infinite;
     }
 
+    &.status-pending {
+      color: var(--color-info);
+      animation: pulse 1.5s infinite;
+    }
+
     &.status-warning {
       color: var(--color-danger);
     }
@@ -778,10 +818,66 @@ input:checked + .toggle-slider {
   color: var(--color-text-secondary);
 }
 
-// ═══ Prompt Section ═══
-.prompt-section {
+// ═══ Info Section ═══
+.info-section {
   .section-body {
     padding: var(--spacing-md);
+  }
+}
+
+.info-box {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+  padding: var(--spacing-md);
+  background: rgba(var(--color-info-rgb, 59, 130, 246), 0.1);
+  border: 1px solid rgba(var(--color-info-rgb, 59, 130, 246), 0.3);
+  border-radius: var(--radius-md);
+
+  > i {
+    color: var(--color-info, #3b82f6);
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .info-content {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+
+    p {
+      margin: 0 0 var(--spacing-xs) 0;
+    }
+
+    ul {
+      margin: var(--spacing-xs) 0;
+      padding-left: var(--spacing-lg);
+
+      li {
+        margin-bottom: var(--spacing-xs);
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    code {
+      background: var(--color-bg-tertiary);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-gold);
+    }
+
+    .info-hint {
+      margin-top: var(--spacing-sm);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
   }
 }
 

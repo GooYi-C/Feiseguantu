@@ -80,6 +80,11 @@ _.set('变量路径', 新值);//更新原因
 
     // 是否包含场景描述
     includeScenario: z.boolean().default(false),
+
+    // 【开发者配置】Prompt过滤正则表达式列表
+    // 在发送给LLM2的prompt中删除所有匹配项
+    // 示例: ['^<StatusPlaceHolderImpl/>', '\\[mvu_plot\\]']
+    promptFilterPatterns: z.array(z.string()).default(['<StatusPlaceHolderImpl/>']),
   })
   .prefault({});
 
@@ -88,7 +93,10 @@ const SettingsSchema = z
     // 是否启用额外模型解析
     enableExtraModelParsing: z.boolean().default(false),
 
-    // API配置
+    // 是否使用酒馆主API（与插头相同）
+    useMainApi: z.boolean().default(true),
+
+    // API配置（仅在 useMainApi 为 false 时使用）
     apiConfig: ApiConfigSchema,
 
     // Prompt配置
@@ -132,6 +140,11 @@ let pendingConfirmation: {
 } | null = null;
 let isInExtraModelParsing = false; // 标记当前是否在额外模型解析中（用于世界书过滤）
 let messageReceivedListener: EventOnReturn | null = null; // 消息接收监听器
+let generationStoppedListener: EventOnReturn | null = null; // 生成中止监听器
+let generationStartedListener: EventOnReturn | null = null; // 生成开始监听器（用于拦截）
+let wasGenerationStopped = false; // 标记主API是否被用户主动中止
+let pendingRegenerate = false; // 标记是否需要在确认后重新生成
+let blockedUserMessageId: number | null = null; // 记录被拦截时用户消息的 ID，用于取消时删除
 
 // ═══ 事件名称定义 ═══
 export const SCARLET_MVU_EVENTS = {
@@ -164,6 +177,9 @@ export const SCARLET_MVU_EVENTS = {
   REQUEST_SAVE_SETTINGS: 'scarlet_mvu_request_save_settings',
   REQUEST_GET_SETTINGS: 'scarlet_mvu_request_get_settings',
   SETTINGS_RESPONSE: 'scarlet_mvu_settings_response',
+  // 生成拦截相关
+  GENERATION_BLOCKED: 'scarlet_mvu_generation_blocked', // 生成被拦截，需要用户确认
+  GENERATION_BLOCK_CONFIRMED: 'scarlet_mvu_generation_block_confirmed', // 用户确认放弃/中断
 };
 
 // ═══ 工具函数 ═══
@@ -450,6 +466,22 @@ async function buildPromptForParsing(): Promise<{
   });
   previewParts.push(`【用户请求】\n${userPrompt}`);
 
+  // 8. 应用正则过滤器 (开发者配置)
+  const filterPatterns = promptConfig.promptFilterPatterns || [];
+  if (filterPatterns.length > 0) {
+    for (const prompt of prompts) {
+      for (const pattern of filterPatterns) {
+        try {
+          const regex = new RegExp(pattern, 'g');
+          prompt.content = prompt.content.replace(regex, '');
+        } catch (e) {
+          console.warn(`[绯色官途MVU] 无效的正则表达式: ${pattern}`, e);
+        }
+      }
+    }
+    console.info(`[绯色官途MVU] 已应用 ${filterPatterns.length} 个正则过滤器`);
+  }
+
   return {
     prompts,
     preview: previewParts.join('\n\n' + '─'.repeat(50) + '\n\n'),
@@ -521,24 +553,44 @@ async function fetchModelList(apiUrl: string, apiKey: string): Promise<string[]>
 }
 
 // ═══ 保存/恢复流式输出设置 ═══
+// 使用 Preset API 确保流式设置正确恢复
 function saveStreamSetting(): void {
   try {
-    originalStreamSetting = SillyTavern.chatCompletionSettings?.stream ?? null;
+    // 使用 Preset API 获取正确的流式设置
+    const preset = getPreset('in_use');
+    originalStreamSetting = preset.settings.should_stream;
     console.info('[绯色官途MVU] 保存流式输出设置:', originalStreamSetting);
   } catch (e) {
-    console.warn('[绯色官途MVU] 保存流式输出设置失败:', e);
+    // 回退到 chatCompletionSettings
+    try {
+      originalStreamSetting = SillyTavern.chatCompletionSettings?.stream ?? true;
+      console.info('[绯色官途MVU] 保存流式输出设置(fallback):', originalStreamSetting);
+    } catch {
+      originalStreamSetting = true; // 默认流式
+    }
   }
 }
 
-function restoreStreamSetting(): void {
+async function restoreStreamSetting(): Promise<void> {
+  const targetValue = originalStreamSetting !== null ? originalStreamSetting : true;
+  console.info('[绯色官途MVU] 准备恢复流式输出设置:', targetValue);
+
   try {
-    if (originalStreamSetting !== null && SillyTavern.chatCompletionSettings) {
-      SillyTavern.chatCompletionSettings.stream = originalStreamSetting;
-      console.info('[绯色官途MVU] 恢复流式输出设置:', originalStreamSetting);
-    }
-    originalStreamSetting = null;
+    // 使用 Preset API 设置流式输出（最可靠的方式）
+    await setPreset('in_use', { settings: { should_stream: targetValue } });
+    console.info('[绯色官途MVU] 已通过Preset API恢复流式输出设置:', targetValue);
   } catch (e) {
-    console.warn('[绯色官途MVU] 恢复流式输出设置失败:', e);
+    // 回退方案：直接修改 chatCompletionSettings
+    try {
+      if (SillyTavern.chatCompletionSettings) {
+        SillyTavern.chatCompletionSettings.stream = targetValue;
+        console.info('[绯色官途MVU] 已通过fallback恢复流式输出设置:', targetValue);
+      }
+    } catch {
+      console.warn('[绯色官途MVU] 恢复流式输出设置失败');
+    }
+  } finally {
+    originalStreamSetting = null;
   }
 }
 
@@ -614,7 +666,7 @@ async function retryExtraModelParsing(): Promise<void> {
     toastr.info('已中断解析', '[绯色官途]');
 
     // 恢复流式输出设置
-    restoreStreamSetting();
+    await restoreStreamSetting();
     return;
   }
 
@@ -653,7 +705,7 @@ async function retryExtraModelParsing(): Promise<void> {
 
     let messageContent = message.message;
 
-    // 移除已存在的<UpdateVariable>块
+    // 移除已存在的<UpdateVariable>块（无论是自动还是手动解析）
     const updateVarStart = messageContent.lastIndexOf('<UpdateVariable>');
     if (updateVarStart >= 0) {
       const updateVarEnd = messageContent.lastIndexOf('</UpdateVariable>');
@@ -662,8 +714,27 @@ async function retryExtraModelParsing(): Promise<void> {
       } else {
         messageContent = messageContent.slice(0, updateVarStart);
       }
-      await setChatMessages([{ message_id: messageId, message: messageContent }], { refresh: 'none' });
     }
+
+    // ═══ 关键修复：统一使用上一楼层的变量 ═══
+    // 无论是自动解析还是手动重新解析，我们都应该：
+    // 1. 将当前楼层的变量重置为上一楼层的变量
+    // 2. 这样 {{get_message_variable::stat_data}} 宏就能获取到正确的（更新前的）数据
+    // 3. LLM2 会基于这个"未更新"的状态来生成变量更新命令
+    const prevMessageId = messageId > 0 ? messageId - 1 : 0;
+    const prevVariables = getLastValidMvuData(prevMessageId);
+
+    if (prevVariables?.stat_data) {
+      // 将上一楼层的变量覆盖到当前楼层（临时）
+      // 这确保了宏 {{get_message_variable::stat_data}} 获取的是更新前的状态
+      await Mvu.replaceMvuData(prevVariables, { type: 'message', message_id: messageId });
+      console.info('[绯色官途MVU] 已将当前楼层变量重置为上一楼层 (楼层', prevMessageId, ')');
+    } else {
+      console.warn('[绯色官途MVU] 无法获取上一楼层变量，将使用当前楼层变量');
+    }
+
+    // 更新消息内容（移除旧的 UpdateVariable 块）
+    await setChatMessages([{ message_id: messageId, message: messageContent }], { refresh: 'none' });
 
     if (shouldAbortParsing) {
       throw new Error('用户中断');
@@ -682,13 +753,12 @@ async function retryExtraModelParsing(): Promise<void> {
 
     let response: string;
     const promptConfig = settings.promptConfig;
+    const useMainApi = settings.useMainApi;
 
-    // 使用generateRaw完全控制发送的内容
-    if (promptConfig.sendPreset) {
-      // 如果用户选择发送预设，使用generate
-      response = await generate({
-        user_input: promptConfig.customUserPrompt || '请根据上述剧情内容，分析并输出变量更新命令。',
-        custom_api: {
+    // 构建 custom_api 配置（仅在不使用主 API 时）
+    const customApiConfig = useMainApi
+      ? undefined
+      : {
           apiurl: config.apiUrl,
           key: config.apiKey,
           model: config.modelName,
@@ -697,7 +767,14 @@ async function retryExtraModelParsing(): Promise<void> {
           frequency_penalty: config.frequencyPenalty,
           presence_penalty: config.presencePenalty,
           top_p: config.topP,
-        },
+        };
+
+    // 使用generateRaw完全控制发送的内容
+    if (promptConfig.sendPreset) {
+      // 如果用户选择发送预设，使用generate
+      response = await generate({
+        user_input: promptConfig.customUserPrompt || '请根据上述剧情内容，分析并输出变量更新命令。',
+        custom_api: customApiConfig,
         injects: [
           {
             position: 'in_chat',
@@ -714,16 +791,7 @@ async function retryExtraModelParsing(): Promise<void> {
     } else {
       // 不发送预设，使用generateRaw完全自定义
       response = await generateRaw({
-        custom_api: {
-          apiurl: config.apiUrl,
-          key: config.apiKey,
-          model: config.modelName,
-          max_tokens: config.maxTokens,
-          temperature: config.temperature,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          top_p: config.topP,
-        },
+        custom_api: customApiConfig,
         ordered_prompts: prompts,
         should_stream: false,
         generation_id: currentGenerationId || undefined, // 添加生成ID用于中断
@@ -797,42 +865,91 @@ async function retryExtraModelParsing(): Promise<void> {
     currentGenerationId = null;
   } finally {
     // 始终恢复流式输出设置
-    restoreStreamSetting();
+    await restoreStreamSetting();
     isInExtraModelParsing = false;
     currentGenerationId = null;
   }
 }
 
+// ═══ 获取上一楼层的有效变量 ═══
+// 模仿 MVU 内部的 getLastValidVariable 逻辑
+// 用于在调用 LLM2 前将当前楼层变量重置为上一楼层状态
+function getLastValidMvuData(beforeMessageId: number): Mvu.MvuData | null {
+  const chat = SillyTavern.chat;
+  if (!chat || chat.length === 0) return null;
+
+  // 从 beforeMessageId 向前搜索，找到最后一个有 stat_data 的楼层
+  for (let i = Math.min(beforeMessageId, chat.length - 1); i >= 0; i--) {
+    const chatMessage = chat[i];
+    const swipeId = chatMessage?.swipe_id ?? 0;
+    const variables = _.get(chatMessage, ['variables', swipeId]);
+    if (variables?.stat_data) {
+      return klona(variables) as Mvu.MvuData;
+    }
+  }
+
+  // 如果没找到，尝试从聊天变量获取
+  const chatVars = getVariables({ type: 'chat' });
+  if (chatVars?.stat_data) {
+    return klona(chatVars) as Mvu.MvuData;
+  }
+
+  return null;
+}
+
 // ═══ 应用变量更新 ═══
+// 直接使用 MVU 内部的 handleVariablesInMessage 函数
+// 这是 MVU "重新处理变量" 按钮使用的同一函数，能正确处理所有变量更新逻辑
 async function applyVariableUpdate(messageId: number, originalMessage: string, updateBlock: string): Promise<void> {
   try {
-    // 保存更新前的变量快照（用于触发VARIABLE_UPDATE_ENDED事件）
-    const variablesBeforeUpdate = klona(Mvu.getMvuData({ type: 'message', message_id: messageId }));
-
     // 1. 将更新语句追加到消息内容
     let newMessage = originalMessage + '\n\n' + updateBlock;
 
-    // 2. 添加状态栏占位符
+    // 2. 添加状态栏占位符（如果没有的话）
     if (!newMessage.includes('<StatusPlaceHolderImpl/>')) {
       newMessage += '\n\n<StatusPlaceHolderImpl/>';
     }
 
-    // 3. 先保存消息（不刷新），让MVU能读取到新内容
+    // 3. 保存消息内容到聊天记录（不刷新UI，避免iframe重载）
+    // MVU 的 handleVariablesInMessage 会从聊天记录中读取消息
     await setChatMessages([{ message_id: messageId, message: newMessage }], { refresh: 'none' });
+    console.info('[绯色官途MVU] 消息已保存到楼层', messageId);
 
-    console.info('[绯色官途MVU] 已插入更新语句，准备触发MVU变量处理...');
+    // 4. 清除当前楼层的变量数据（模仿MVU"重新处理变量"按钮行为）
+    // 这样 handleVariablesInMessage 会从上一楼层继承变量并重新解析
+    await updateVariablesWith(
+      (variables: Record<string, unknown>) => {
+        _.unset(variables, 'stat_data');
+        _.unset(variables, 'delta_data');
+        _.unset(variables, 'display_data');
+        _.unset(variables, 'schema');
+        return variables;
+      },
+      { type: 'message', message_id: messageId },
+    );
 
-    // 4. 触发MVU的MESSAGE_UPDATED事件，让MVU重新处理该消息中的变量更新命令
-    // 这是MVU内部处理变量更新的标准流程
-    await eventEmitAndWait(tavern_events.MESSAGE_UPDATED, messageId);
+    // 5. 调用 MVU 内部的 handleVariablesInMessage 函数
+    // MVU 在初始化时将此函数导出到 window.parent（见 MVU/src/main.ts:526）
+    // 这个函数会：
+    //   - 从聊天记录中读取消息内容
+    //   - 从前一楼层获取变量基础数据
+    //   - 调用 updateVariables 解析 JSON Patch 等命令
+    //   - 将更新后的变量写回当前楼层
+    const handleVariablesInMessage = (window.parent as any).handleVariablesInMessage as
+      | ((messageId: number) => Promise<void>)
+      | undefined;
 
-    // 5. 等待一小段时间，确保MVU处理完成
-    await new Promise(resolve => setTimeout(resolve, 100));
+    if (handleVariablesInMessage) {
+      console.info('[绯色官途MVU] 调用 MVU handleVariablesInMessage 处理变量...');
+      await handleVariablesInMessage(messageId);
+      console.info('[绯色官途MVU] 变量处理完成');
+    } else {
+      console.error('[绯色官途MVU] 无法找到 MVU 的 handleVariablesInMessage 函数');
+      throw new Error('MVU handleVariablesInMessage 函数不可用，请确保 MVU 已正确加载');
+    }
 
-    // 6. 刷新消息显示
+    // 6. 刷新显示
     await setChatMessages([{ message_id: messageId, message: newMessage }], { refresh: 'affected' });
-
-    console.info('[绯色官途MVU] MVU变量处理完成');
 
     eventEmit(SCARLET_MVU_EVENTS.PARSING_COMPLETED);
 
@@ -841,16 +958,6 @@ async function applyVariableUpdate(messageId: number, originalMessage: string, u
       messageId,
       updateBlock,
     });
-
-    // 8. 触发MVU的变量更新结束事件，确保前端能收到通知
-    try {
-      const updatedData = Mvu.getMvuData({ type: 'message', message_id: messageId });
-      if (updatedData && variablesBeforeUpdate) {
-        eventEmit(Mvu.events.VARIABLE_UPDATE_ENDED, updatedData, variablesBeforeUpdate);
-      }
-    } catch (e) {
-      console.warn('[绯色官途MVU] 触发MVU变量更新事件失败:', e);
-    }
 
     toastr.success('变量更新已应用', '[绯色官途]');
   } catch (error) {
@@ -863,7 +970,7 @@ async function applyVariableUpdate(messageId: number, originalMessage: string, u
     isInExtraModelParsing = false;
     pendingConfirmation = null;
     currentGenerationId = null;
-    restoreStreamSetting();
+    await restoreStreamSetting();
   }
 }
 
@@ -981,10 +1088,70 @@ function setupEventListeners(): void {
         // 用户取消，清理状态
         isParsingInProgress = false;
         pendingConfirmation = null;
-        restoreStreamSetting();
+        await restoreStreamSetting();
         eventEmit(SCARLET_MVU_EVENTS.PARSING_ABORTED);
         toastr.info('已取消变量更新', '[绯色官途]');
       }
+    }
+  });
+
+  // Bug 3 修复：监听生成拦截确认结果
+  eventOn(SCARLET_MVU_EVENTS.GENERATION_BLOCK_CONFIRMED, async (confirmed: boolean) => {
+    if (confirmed) {
+      // 用户确认放弃/中断，清理状态
+      console.info('[绯色官途MVU] 用户确认放弃/中断，清理状态并重新生成');
+
+      // 清理待确认状态
+      if (pendingConfirmation) {
+        pendingConfirmation = null;
+      }
+
+      // 清理被拦截消息 ID（用户选择继续，消息保留）
+      blockedUserMessageId = null;
+
+      // 中断正在进行的解析
+      if (isParsingInProgress) {
+        shouldAbortParsing = true;
+        if (currentGenerationId) {
+          try {
+            await stopGenerationById(currentGenerationId);
+          } catch {
+            // 忽略错误
+          }
+        }
+      }
+
+      // 重置所有状态
+      isParsingInProgress = false;
+      isInExtraModelParsing = false;
+      currentGenerationId = null;
+      await restoreStreamSetting();
+      eventEmit(SCARLET_MVU_EVENTS.PARSING_ABORTED);
+
+      // 重新触发生成
+      pendingRegenerate = false;
+      setTimeout(() => {
+        console.info('[绯色官途MVU] 重新触发用户消息生成');
+        SillyTavern.generate('normal');
+      }, 100);
+    } else {
+      // 用户取消，不发送消息，删除已添加的用户消息
+      console.info('[绯色官途MVU] 用户取消发送消息');
+      pendingRegenerate = false;
+
+      // 删除被拦截时添加的用户消息
+      if (blockedUserMessageId !== null) {
+        console.info('[绯色官途MVU] 删除被拦截的用户消息:', blockedUserMessageId);
+        try {
+          await deleteChatMessages([blockedUserMessageId], { refresh: 'all' });
+        } catch (e) {
+          console.warn('[绯色官途MVU] 删除用户消息失败:', e);
+        }
+        blockedUserMessageId = null;
+      }
+
+      // 发送 PARSING_ABORTED 事件，通知前端重置图标状态
+      eventEmit(SCARLET_MVU_EVENTS.PARSING_ABORTED);
     }
   });
 }
@@ -1013,7 +1180,7 @@ function exportGlobalApi(): void {
         isInExtraModelParsing = false;
         currentGenerationId = null;
         eventEmit(SCARLET_MVU_EVENTS.PARSING_ABORTED);
-        restoreStreamSetting();
+        await restoreStreamSetting();
         toastr.info('已中断解析', '[绯色官途]');
       }
     },
@@ -1085,13 +1252,95 @@ function setupAutoParsingListener(): void {
     messageReceivedListener.stop();
     messageReceivedListener = null;
   }
+  if (generationStoppedListener) {
+    generationStoppedListener.stop();
+    generationStoppedListener = null;
+  }
+  if (generationStartedListener) {
+    generationStartedListener.stop();
+    generationStartedListener = null;
+  }
+
+  // 重置标志
+  wasGenerationStopped = false;
+  pendingRegenerate = false;
 
   if (!settings.enableExtraModelParsing) {
     return;
   }
 
+  // Bug 2 修复：监听生成中止事件
+  // 如果用户通过酒馆的中止按钮主动中止了主API的输出，不应触发自动解析
+  generationStoppedListener = eventOn(tavern_events.GENERATION_STOPPED, () => {
+    // 如果是我们主动中止的（用于拦截），不设置标志
+    if (pendingRegenerate) {
+      return;
+    }
+    console.info('[绯色官途MVU] 检测到用户主动中止生成，跳过本次自动解析');
+    wasGenerationStopped = true;
+  });
+
+  // Bug 3 修复：监听生成开始事件，拦截用户在解析中/最小化时尝试发送消息
+  generationStartedListener = eventOn(
+    tavern_events.GENERATION_STARTED,
+    (_type: string, _option: object, dryRun: boolean) => {
+      // 跳过 dry_run（预览/token计数等）
+      if (dryRun) {
+        return;
+      }
+
+      // 检查是否需要拦截：有待确认更新或正在解析中
+      const needBlock = pendingConfirmation !== null || isParsingInProgress;
+
+      if (needBlock) {
+        console.info('[绯色官途MVU] 检测到用户尝试发送消息，但当前有未处理的变量更新');
+        pendingRegenerate = true;
+
+        // 延迟调用 stopGeneration，等待生成实际开始
+        // 在 GENERATION_STARTED 事件回调中同步调用 stopGeneration 会失败，因为请求还没发出
+        // 同时，用户消息也是在此延迟后才被添加到聊天记录中
+        setTimeout(async () => {
+          SillyTavern.stopGeneration();
+
+          // 等待更长时间让用户消息被添加到聊天记录
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // 在 stopGeneration 后获取用户消息 ID - 此时用户消息应该已添加
+          // 扩大搜索范围，获取最后 3 条消息
+          const lastMsgId = getLastMessageId();
+          const lastMessages = getChatMessages(`${Math.max(0, lastMsgId - 2)}-${lastMsgId}`);
+
+          // 从后往前找到最后一条 user 消息
+          let userMsgId: number | null = null;
+          for (let i = lastMessages.length - 1; i >= 0; i--) {
+            if (lastMessages[i].role === 'user') {
+              userMsgId = lastMessages[i].message_id;
+              break;
+            }
+          }
+          blockedUserMessageId = userMsgId;
+        }, 50);
+
+        // 通知前端显示拦截确认对话框
+        eventEmit(SCARLET_MVU_EVENTS.GENERATION_BLOCKED, {
+          reason: pendingConfirmation ? 'pending_confirmation' : 'parsing_in_progress',
+          message: pendingConfirmation
+            ? '您有待确认的变量更新，是否放弃变量更新并发送新消息？'
+            : '额外模型正在解析变量更新，是否中断解析并发送新消息？',
+        });
+      }
+    },
+  );
+
   // 监听消息接收事件（LLM1回复完成后触发）
   messageReceivedListener = eventOn(tavern_events.MESSAGE_RECEIVED, async (messageId: number) => {
+    // Bug 2 修复：如果用户主动中止了生成，跳过自动解析
+    if (wasGenerationStopped) {
+      console.info('[绯色官途MVU] 由于用户主动中止了生成，跳过自动解析');
+      wasGenerationStopped = false; // 重置标志
+      return;
+    }
+
     // 如果正在解析中，跳过
     if (isParsingInProgress) {
       return;
@@ -1168,6 +1417,14 @@ function cleanup(): void {
   if (messageReceivedListener) {
     messageReceivedListener.stop();
     messageReceivedListener = null;
+  }
+  if (generationStoppedListener) {
+    generationStoppedListener.stop();
+    generationStoppedListener = null;
+  }
+  if (generationStartedListener) {
+    generationStartedListener.stop();
+    generationStartedListener = null;
   }
 
   // 清理全局API

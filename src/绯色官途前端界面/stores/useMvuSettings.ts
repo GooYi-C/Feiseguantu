@@ -66,6 +66,7 @@ _.set('变量路径', 新值);//更新原因
 const SettingsSchema = z
   .object({
     enableExtraModelParsing: z.boolean().default(false),
+    useMainApi: z.boolean().default(true), // 与插头相同
     apiConfig: ApiConfigSchema,
     promptConfig: PromptConfigSchema,
     savedProfiles: z
@@ -134,6 +135,9 @@ export const SCARLET_MVU_EVENTS = {
   REQUEST_SAVE_SETTINGS: 'scarlet_mvu_request_save_settings',
   REQUEST_GET_SETTINGS: 'scarlet_mvu_request_get_settings',
   SETTINGS_RESPONSE: 'scarlet_mvu_settings_response',
+  // 生成拦截相关
+  GENERATION_BLOCKED: 'scarlet_mvu_generation_blocked',
+  GENERATION_BLOCK_CONFIRMED: 'scarlet_mvu_generation_block_confirmed',
 };
 
 // ═══ 待确认更新数据 ═══
@@ -155,6 +159,10 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
   const modelListError = ref('');
   const pendingUpdate = ref<PendingUpdateData | null>(null);
   const showConfirmDialog = ref(false);
+
+  // 生成拦截相关状态
+  const showBlockConfirm = ref(false);
+  const blockConfirmMessage = ref('');
 
   // 世界书相关状态
   const lorebookList = ref<LorebookInfo[]>([]);
@@ -432,6 +440,13 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     pendingUpdate.value = null;
   }
 
+  // ═══ 确认/取消生成拦截 ═══
+  function confirmGenerationBlock(confirmed: boolean): void {
+    eventEmit(SCARLET_MVU_EVENTS.GENERATION_BLOCK_CONFIRMED, confirmed);
+    showBlockConfirm.value = false;
+    blockConfirmMessage.value = '';
+  }
+
   // ═══ 设置事件监听 ═══
   function setupEventListeners(): void {
     // 监听设置变更
@@ -465,6 +480,9 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     eventOn(SCARLET_MVU_EVENTS.PARSING_ABORTED, () => {
       isParsingInProgress.value = false;
       parsingProgress.value = '';
+      // 清理待确认状态，将图标恢复为黄色
+      pendingUpdate.value = null;
+      showConfirmDialog.value = false;
     });
 
     eventOn(SCARLET_MVU_EVENTS.PARSING_ERROR, () => {
@@ -506,6 +524,12 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
       settings.value = SettingsSchema.parse(newSettings);
       modelList.value = settings.value.internal.cachedModelList || [];
     });
+
+    // 监听生成拦截事件
+    eventOn(SCARLET_MVU_EVENTS.GENERATION_BLOCKED, (data: { reason: string; message: string }) => {
+      blockConfirmMessage.value = data.message;
+      showBlockConfirm.value = true;
+    });
   }
 
   // ═══ 初始化 ═══
@@ -513,6 +537,23 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     checkScriptLoaded();
     setupEventListeners();
     await loadSettings();
+
+    // Bug 1 修复：初始化时同步脚本的解析状态
+    // 前端 iframe 可能在脚本已经开始解析后才加载，需要同步状态
+    const api = getScriptApi();
+    if (api) {
+      const isParsing = api.isParsingInProgress();
+      if (isParsing) {
+        isParsingInProgress.value = true;
+        parsingProgress.value = '正在解析...';
+      }
+      // 同步待确认状态
+      const pending = api.getPendingConfirmation();
+      if (pending) {
+        pendingUpdate.value = pending;
+        showConfirmDialog.value = true;
+      }
+    }
 
     watch(
       () => settings.value,
@@ -534,6 +575,8 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     modelListError,
     pendingUpdate,
     showConfirmDialog,
+    showBlockConfirm,
+    blockConfirmMessage,
     lorebookList,
     isLoadingLorebooks,
     promptPreview,
@@ -567,6 +610,7 @@ export const useMvuSettings = defineStore('mvuSettings', () => {
     deleteProfile,
     retryParsing,
     confirmUpdate,
+    confirmGenerationBlock,
     setupEventListeners,
     initialize,
   };

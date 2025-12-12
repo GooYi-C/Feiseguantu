@@ -170,9 +170,132 @@ _.delete('user.临时状态');
 
 ---
 
-## 7. 注意事项
+## 7. Prompt 过滤配置
+
+开发者可以配置正则表达式列表，在发送给 LLM2 的 Prompt 中删除匹配的内容。
+
+### 7.1 配置位置
+
+在 `PromptConfigSchema` 中的 `promptFilterPatterns` 字段：
+
+```typescript
+promptFilterPatterns: z.array(z.string()).default([
+  '<StatusPlaceHolderImpl/>', // 默认删除状态栏占位符
+]),
+```
+
+### 7.2 使用示例
+
+```typescript
+// 在 index.ts 中修改默认值
+promptFilterPatterns: z.array(z.string()).default([
+  '<StatusPlaceHolderImpl/>',  // 删除状态栏占位符
+  '\\[mvu_plot\\]',            // 删除 [mvu_plot] 标签
+  '<past_observe>[\\s\\S]*?</past_observe>', // 删除已有的 past_observe 块
+]),
+```
+
+---
+
+## 8. 开局功能配置
+
+### 8.1 开局功能概述
+
+开局辅助功能允许用户在游戏开始前（第 0 层）配置初始状态：
+
+1. **开局检测**：系统自动检测是否在第 0 层，显示专门的开局配置界面
+2. **开局描述**：用户输入背景故事描述
+3. **变量编辑**：用户可预先调整初始变量
+4. **生成开局**：调用 LLM 根据描述生成变量更新命令
+5. **确认开局**：应用变量后生成正式的开局剧情
+
+### 8.2 开局相关世界书标签
+
+| 标签                  | 用途                              | 发送对象                |
+| --------------------- | --------------------------------- | ----------------------- |
+| `[mvu_start_update]`  | 开局变量生成规则                  | 开局变量生成 LLM        |
+| `[mvu_start]`         | 开局剧情模板                      | 开局剧情生成 LLM (主模型) |
+| `[InitVar]`           | 初始变量定义（也用于开局）        | 开局变量生成 LLM        |
+
+### 8.3 世界书条目示例
+
+```yaml
+# 开局变量更新规则 - 只发送给开局变量生成
+"[mvu_start_update] 开局变量规则"
+
+# 开局剧情模板 - 只发送给开局剧情生成
+"[mvu_start] 开局剧情模板"
+
+# 初始变量定义 - 开局和正常流程都使用
+"[InitVar] 初始变量"
+
+# 组合使用
+"[mvu_start][mvu_start_update] 开局综合配置"
+```
+
+### 8.4 开局 Prompt 结构
+
+#### 8.4.1 开局变量生成 Prompt
+
+```
+[System] 开局变量生成指引
+[System] 世界书条目 ([mvu_start_update] 或 [InitVar])
+[System] 当前变量状态 (JSON)
+[User] 用户的开局背景描述 + 请求生成变量更新
+```
+
+#### 8.4.2 开局剧情生成 Prompt
+
+```
+[System] 角色描述 (角色卡)
+[System] 角色人设 (角色卡)
+[System] 场景描述 (角色卡)
+[System] 世界书条目 ([mvu_start] 或常驻条目，排除 [mvu_update]/[mvu_plot])
+[System] 当前变量状态 (JSON，供参考)
+[User] 用户的开局背景描述
+```
+
+### 8.5 开局事件
+
+脚本导出以下开局相关事件：
+
+| 事件名                             | 触发时机                     |
+| ---------------------------------- | ---------------------------- |
+| `scarlet_startup_generation_started`   | 开局变量生成开始             |
+| `scarlet_startup_generation_progress`  | 生成进度更新                 |
+| `scarlet_startup_generation_completed` | 变量生成完成，返回更新块     |
+| `scarlet_startup_generation_error`     | 生成失败                     |
+| `scarlet_startup_generation_aborted`   | 用户中断生成                 |
+| `scarlet_startup_story_started`        | 开局剧情生成开始             |
+| `scarlet_startup_story_completed`      | 开局完成，游戏开始           |
+| `scarlet_startup_story_error`          | 剧情生成失败                 |
+
+### 8.6 开局 API
+
+通过 `window.ScarletMvu.startup` 访问：
+
+```typescript
+// 检查是否正在生成
+ScarletMvu.startup.isGenerating(): boolean
+
+// 生成开局变量
+ScarletMvu.startup.generate(description: string, variables: object): Promise<void>
+
+// 确认开局并生成剧情
+ScarletMvu.startup.confirm(description: string, variables: object, updateBlock: string): Promise<void>
+
+// 中断生成
+ScarletMvu.startup.abort(): Promise<void>
+```
+
+---
+
+## 9. 注意事项
 
 1. **不要将预设发送给 LLM2**：预设通常用于角色扮演，会干扰变量更新
 2. **精简聊天历史**：过多历史会增加 token 消耗，通常 2-3 条足够
 3. **明确的更新规则**：在世界书的 `[mvu_update]` 条目中写清楚变量更新规则
 4. **测试验证**：修改配置后务必测试变量更新是否正常工作
+5. **使用正则过滤**：通过 `promptFilterPatterns` 可以清理不需要发送给 LLM2 的内容
+6. **开局条目分离**：建议将开局专用条目 (`[mvu_start_update]`, `[mvu_start]`) 与正常流程条目分开管理
+7. **开局变量验证**：开局完成后，变量会自动保存到第 0 层消息的 MVU 数据中

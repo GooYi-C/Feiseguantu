@@ -53,15 +53,19 @@
             <i class="fas fa-users"></i>
             {{ 人物总数 }}
           </router-link>
-          <!-- MVU重试解析按钮 (解析中显示红色停止图标，否则显示金色刷新图标) -->
+          <!-- MVU重试解析按钮 -->
           <button
             class="mvu-retry-btn"
-            :class="{ parsing: mvuSettings.isParsingInProgress }"
+            :class="{
+              parsing: mvuSettings.isParsingInProgress,
+              minimized: isDialogMinimized,
+            }"
             :title="mvuRetryButtonTitle"
             aria-label="重试变量解析"
             @click="handleMvuRetry"
           >
-            <i v-if="mvuSettings.isParsingInProgress" class="fas fa-stop-circle abort-icon"></i>
+            <i v-if="isDialogMinimized" class="fas fa-window-restore minimized-icon"></i>
+            <i v-else-if="mvuSettings.isParsingInProgress" class="fas fa-stop-circle abort-icon"></i>
             <i v-else class="fas fa-sync-alt"></i>
           </button>
           <!-- 设置按钮 -->
@@ -102,18 +106,46 @@
 
     <!-- MVU确认弹窗 -->
     <MvuConfirmDialog
+      ref="mvuConfirmDialogRef"
       v-model="mvuSettings.showConfirmDialog"
+      v-model:is-minimized="isDialogMinimized"
       :pending-data="mvuSettings.pendingUpdate"
       @confirm="handleMvuConfirm"
       @cancel="handleMvuCancel"
     />
+
+    <!-- 生成拦截确认弹窗 -->
+    <Modal
+      v-model="mvuSettings.showBlockConfirm"
+      title="操作确认"
+      icon="fas fa-exclamation-triangle"
+      size="sm"
+      :close-on-overlay="false"
+      :close-on-esc="false"
+      :show-close="false"
+    >
+      <div class="block-confirm-content">
+        <p>{{ mvuSettings.blockConfirmMessage }}</p>
+      </div>
+      <template #footer>
+        <div class="block-confirm-actions">
+          <button class="btn-cancel" @click="handleBlockCancel">
+            <i class="fas fa-times"></i> 取消发送
+          </button>
+          <button class="btn-confirm" @click="handleBlockConfirm">
+            <i class="fas fa-check"></i> 确认发送
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { CharacterDrawer } from './components/character';
+import { Modal } from './components/common';
 import { MvuConfirmDialog } from './components/mvu';
 import { routes } from './router';
 import { useCharacterDrawer, useGameData, useMvuSettings } from './stores';
@@ -122,6 +154,10 @@ const route = useRoute();
 const gameData = useGameData();
 const characterDrawerStore = useCharacterDrawer();
 const mvuSettings = useMvuSettings();
+
+// MVU确认弹窗相关
+const mvuConfirmDialogRef = ref<InstanceType<typeof MvuConfirmDialog> | null>(null);
+const isDialogMinimized = ref(false);
 
 const loading = computed(() => gameData.loading);
 const initialized = computed(() => gameData.initialized);
@@ -143,6 +179,9 @@ const 人物总数 = computed(() => gameData.人物总数);
 
 // MVU按钮提示文本
 const mvuRetryButtonTitle = computed(() => {
+  if (isDialogMinimized.value) {
+    return '点击恢复变量更新确认弹窗';
+  }
   if (mvuSettings.isParsingInProgress) {
     return `点击中断解析 (${mvuSettings.parsingProgress || '解析中...'})`;
   }
@@ -195,6 +234,11 @@ async function discardChanges() {
 
 // MVU重试解析
 function handleMvuRetry() {
+  // 如果弹窗处于最小化状态，恢复弹窗
+  if (isDialogMinimized.value) {
+    isDialogMinimized.value = false;
+    return;
+  }
   mvuSettings.retryParsing();
 }
 
@@ -206,6 +250,16 @@ function handleMvuConfirm(updateBlock: string) {
 // MVU取消更新
 function handleMvuCancel() {
   mvuSettings.confirmUpdate(false);
+}
+
+// 生成拦截确认
+function handleBlockConfirm() {
+  mvuSettings.confirmGenerationBlock(true);
+}
+
+// 生成拦截取消
+function handleBlockCancel() {
+  mvuSettings.confirmGenerationBlock(false);
 }
 
 onMounted(async () => {
@@ -467,7 +521,7 @@ onMounted(async () => {
   &.parsing {
     border-color: var(--color-danger);
     background: rgba(255, 107, 107, 0.15);
-    cursor: pointer; // 可以点击中断
+    cursor: pointer;
 
     .abort-icon {
       color: var(--color-danger);
@@ -476,6 +530,22 @@ onMounted(async () => {
 
     &:hover {
       background: rgba(255, 107, 107, 0.25);
+      transform: scale(1.05);
+    }
+  }
+
+  // 最小化状态 - 蓝色恢复图标 + 跳动动画
+  &.minimized {
+    border-color: var(--color-info);
+    background: rgba(122, 162, 247, 0.15);
+
+    .minimized-icon {
+      color: var(--color-info);
+      animation: bounce-restore 1.5s ease-in-out infinite;
+    }
+
+    &:hover {
+      background: rgba(122, 162, 247, 0.25);
       transform: scale(1.05);
     }
   }
@@ -491,6 +561,23 @@ onMounted(async () => {
   50% {
     opacity: 0.6;
     transform: scale(0.9);
+  }
+}
+
+// 恢复按钮跳动动画
+@keyframes bounce-restore {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-2px);
   }
 }
 
@@ -621,6 +708,62 @@ onMounted(async () => {
     color: var(--color-bg-dark);
     font-size: 12px;
     font-weight: 600;
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+}
+
+// ═══ 生成拦截确认对话框 ═══
+.block-confirm-content {
+  text-align: center;
+  padding: 16px 0;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+}
+
+.block-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    i {
+      font-size: 12px;
+    }
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+
+    &:hover {
+      border-color: var(--color-text-muted);
+      color: var(--color-text);
+    }
+  }
+
+  .btn-confirm {
+    background: var(--color-danger);
+    border: 1px solid var(--color-danger);
+    color: white;
 
     &:hover {
       filter: brightness(1.1);
