@@ -192,8 +192,6 @@ export const 人物Schema = z.object({
 });
 
 // ========== 自动清理逻辑 ==========
-const 需移除的人物状态 = ['落马', '病故', '去世', '失踪', '离世'];
-const 需移除的绯色阶段 = ['彻底终结'];
 
 const 计算政治气候 = (年: number) => {
   if (年 <= 0 || 年 < 2000) return '无';
@@ -254,20 +252,6 @@ export const GameSchema = z.object({
 
   人物库: z
     .record(z.string(), 人物Schema)
-    .transform(record => {
-      const filtered: Record<string, z.infer<typeof 人物Schema>> = {};
-      for (const [key, value] of Object.entries(record)) {
-        if (需移除的人物状态.includes(value.状态 as string)) continue;
-        if (value.绯色关系 && 需移除的绯色阶段.includes(value.绯色关系.关系阶段 as string)) {
-          const 其他角色 = (value.角色标签 || []).filter(tag => tag !== '绯色对象');
-          if (其他角色.length === 0) continue;
-          value.绯色关系 = undefined;
-          value.角色标签 = 其他角色;
-        }
-        filtered[key] = value;
-      }
-      return filtered;
-    })
     .prefault({}),
 
   关系索引: z

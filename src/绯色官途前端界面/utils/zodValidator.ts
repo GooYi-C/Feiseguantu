@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { GameSchema } from '../stores/schema';
 
 // 启用调试日志 - 调试时设为 true
-const DEBUG_VALIDATION = false;
+const DEBUG_VALIDATION = true;
 
 // 验证结果接口
 export interface ValidationResult {
