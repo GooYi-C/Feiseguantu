@@ -542,8 +542,8 @@ async function getLorebookContentByTag(tag: string): Promise<string> {
           // 检查条目名称是否包含指定标签
           if (comment.includes(tagLower)) {
             if (entry.content && entry.content.trim()) {
-              const entryComment = entry.comment || '未命名条目';
-              contents.push(`[${entryComment}]\n${entry.content}`);
+              // const entryComment = entry.comment || '未命名条目';
+              contents.push(`\n${entry.content}`);
             }
           }
         }
@@ -831,7 +831,7 @@ async function confirmStartup(): Promise<void> {
     eventEmit(SCARLET_MVU_EVENTS.PARSING_PROGRESS, '正在发送开局消息...');
 
     // 创建用户消息到1层
-    const startupMessage = '请根据故事开篇时的[当前全局变量快照]，生成开局剧情。';
+    const startupMessage = '请根据故事开篇当前的[全局变量快照]，生成开局剧情。';
 
     // 使用 createChatMessages 创建用户消息
     await createChatMessages([
@@ -1136,7 +1136,7 @@ async function retryExtraModelParsing(): Promise<void> {
     if (promptConfig.sendPreset) {
       // 如果用户选择发送预设，使用generate
       response = await generate({
-        user_input: promptConfig.customUserPrompt || '请根据上述剧情内容，分析并输出变量更新命令。',
+        user_input: promptConfig.customUserPrompt || '请根据上述信息与指南，分析并输出变量更新命令。',
         custom_api: {
           apiurl: config.apiUrl,
           key: config.apiKey,
