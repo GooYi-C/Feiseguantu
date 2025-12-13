@@ -42,7 +42,6 @@ function parseJsonPatchPath(path: string): string[] {
 // 获取 zod schema 的类型名称
 // 兼容 Zod v3 (typeName) 和 Zod v4 (type)
 function getZodTypeName(schema: z.ZodTypeAny): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const def = (schema as any)?._def;
   if (!def) return '';
 
