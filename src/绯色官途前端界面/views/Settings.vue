@@ -238,29 +238,6 @@
         </section>
       </Transition>
 
-      <!-- 世界书配置说明 -->
-      <Transition name="fade">
-        <section v-if="mvuSettings.isEnabled" class="settings-section info-section">
-          <div class="section-header">
-            <h2><i class="fas fa-book"></i> 世界书配置说明</h2>
-          </div>
-          <div class="section-body">
-            <div class="info-box">
-              <i class="fas fa-info-circle"></i>
-              <div class="info-content">
-                <p><strong>世界书条目自动过滤规则：</strong></p>
-                <ul>
-                  <li>带 <code>[mvu_update]</code> 的条目 → 仅发送给额外模型(LLM2)</li>
-                  <li>带 <code>[mvu_plot]</code> 的条目 → 仅发送给主模型(LLM1)</li>
-                  <li>两者都不带的条目 → 同时发送给LLM1和LLM2</li>
-                </ul>
-                <p class="info-hint">请按照上述规则在世界书条目名称中添加标签，系统将自动处理Prompt分发。</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </Transition>
-
       <!-- 界面设置 -->
       <section class="settings-section">
         <div class="section-header">
@@ -901,88 +878,6 @@ input:checked + .toggle-slider {
   font-family: var(--font-mono);
   color: var(--color-text-secondary);
 }
-
-// ═══ Info Section ═══
-.info-section {
-  .section-body {
-    padding: var(--spacing-md);
-  }
-}
-
-.info-box {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: flex-start;
-  padding: var(--spacing-md);
-  background: rgba(var(--color-info-rgb, 59, 130, 246), 0.1);
-  border: 1px solid rgba(var(--color-info-rgb, 59, 130, 246), 0.3);
-  border-radius: var(--radius-md);
-
-  > i {
-    color: var(--color-info, #3b82f6);
-    font-size: 18px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .info-content {
-    flex: 1;
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--color-text-secondary);
-
-    p {
-      margin: 0 0 var(--spacing-xs) 0;
-    }
-
-    ul {
-      margin: var(--spacing-xs) 0;
-      padding-left: var(--spacing-lg);
-
-      li {
-        margin-bottom: var(--spacing-xs);
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-    }
-
-    code {
-      background: var(--color-bg-tertiary);
-      padding: 2px 6px;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--color-gold);
-    }
-
-    .info-hint {
-      margin-top: var(--spacing-sm);
-      font-size: 12px;
-      color: var(--color-text-muted);
-    }
-  }
-}
-
-.btn-expand-section {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-bg-dark);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--color-bg-elevated);
-    color: var(--color-text-primary);
-  }
-}
-
 // ═══ Warning ═══
 .script-warning {
   display: flex;

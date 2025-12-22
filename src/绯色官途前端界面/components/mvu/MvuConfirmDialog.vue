@@ -473,7 +473,7 @@ function scrollToErrorInCodeEditor(cmd: ParsedCommand, fieldName: string) {
   const content = editor.value;
 
   // 首先尝试找到命令的路径位置
-  let searchTarget = cmd.path;
+  const searchTarget = cmd.path;
   let position = content.indexOf(`"path": "${searchTarget}"`);
 
   if (position === -1) {
@@ -598,9 +598,10 @@ function formatValue(value: unknown): string {
 function updateCommandValue(index: number, newValue: string) {
   const commands = [...parsedCommands.value];
   if (commands[index]) {
-    // 尝试解析为数字
-    const numValue = Number(newValue);
-    commands[index].value = isNaN(numValue) ? newValue : numValue;
+    // 保持原始字符串值，不自动转换为数字
+    // 这样可以保留前导零（如时间格式 "09:20"）
+    // Zod 验证会自动处理类型转换
+    commands[index].value = newValue;
     rebuildUpdateBlock(commands);
   }
 }

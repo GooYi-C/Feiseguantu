@@ -43,6 +43,8 @@ export default [
         parser: tsParser,
         ecmaVersion: 'latest',
         sourceType: 'module',
+        tsconfigRootDir: import.meta.dirname || process.cwd(),
+        project: ['./tsconfig.json'],
       },
       ecmaVersion: 'latest',
       sourceType: 'module',

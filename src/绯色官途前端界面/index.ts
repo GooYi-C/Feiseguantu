@@ -19,3 +19,5 @@ $(window).on('pagehide', () => {
   app.unmount();
   console.info('[绯色官途] 前端界面已卸载');
 });
+
+// @obfuscate

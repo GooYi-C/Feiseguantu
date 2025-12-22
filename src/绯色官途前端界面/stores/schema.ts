@@ -87,6 +87,7 @@ export const 官场关系Schema = z
     可托付事项: 可选文本,
     近期动向: 可选文本,
   })
+  .passthrough()
   .prefault({});
 
 export const 绯色关系Schema = z
@@ -105,7 +106,8 @@ export const 绯色关系Schema = z
         z.object({
           癖好描述: 可选文本,
           敏感程度: 可选文本,
-        }),
+        })
+          .passthrough(),
       )
       .prefault({}),
     通联方式: 可选文本,
@@ -116,11 +118,13 @@ export const 绯色关系Schema = z
         我方掌握: 可选文本,
         对方掌握: 可选文本,
       })
+      .passthrough()
       .prefault({}),
     利益纠葛: 可选文本,
     安置情况: 可选文本,
     近期事件: 可选文本,
   })
+  .passthrough()
   .prefault({});
 
 export const 竞争关系Schema = z
@@ -132,6 +136,7 @@ export const 竞争关系Schema = z
     对方软肋: 可选文本,
     背后靠山: 可选文本,
   })
+  .passthrough()
   .prefault({});
 
 export const 靠山关系Schema = z
@@ -140,6 +145,7 @@ export const 靠山关系Schema = z
     提携内容: 可选文本,
     预期回报: 可选文本,
   })
+  .passthrough()
   .prefault({});
 
 export const 家庭关系Schema = z
@@ -150,6 +156,7 @@ export const 家庭关系Schema = z
     态度: 可选文本,
     风险等级: 可选文本,
   })
+  .passthrough()
   .prefault({});
 
 export const 子女Schema = z
@@ -162,7 +169,8 @@ export const 子女Schema = z
       状态: 可选文本,
       知悉内情: 可选文本,
       与我关系: 可选文本,
-    }),
+    })
+      .passthrough(),
   )
   .prefault({});
 
@@ -189,7 +197,7 @@ export const 人物Schema = z.object({
   靠山关系: 靠山关系Schema.optional(),
   家庭关系: 家庭关系Schema.optional(),
   子女: 子女Schema.optional(),
-});
+}).passthrough();
 
 // ========== 自动清理逻辑 ==========
 
@@ -207,7 +215,7 @@ const 人情债条目Schema = z.object({
   债务性质: 可选文本,
   偿还压力: 可选文本,
   已偿还: z.boolean().prefault(false),
-});
+}).passthrough();
 
 // ========== 主 Schema ==========
 export const GameSchema = z.object({
@@ -220,6 +228,7 @@ export const GameSchema = z.object({
           日: 日期.prefault(0),
           星期: 星期,
         })
+        .passthrough()
         .prefault({}),
       当前时间: 时间格式,
       当前地点: 可选文本,
@@ -231,6 +240,7 @@ export const GameSchema = z.object({
       圈内传闻: 可选文本,
       个人风评: 可选文本,
     })
+    .passthrough()
     .transform(data => {
       const 年 = data.当前日期?.年;
       if (年 && 年 >= 2000) {
@@ -248,6 +258,7 @@ export const GameSchema = z.object({
       在场人物: z.array(z.string()).prefault([]),
       潜在议题: 可选文本,
     })
+    .passthrough()
     .prefault({}),
 
   人物库: z
@@ -265,6 +276,7 @@ export const GameSchema = z.object({
       核心嫡系列表: z.array(z.string()).prefault([]),
       政治宿敌列表: z.array(z.string()).prefault([]),
     })
+    .passthrough()
     .prefault({}),
 
   个人档案: z
@@ -281,6 +293,7 @@ export const GameSchema = z.object({
           入党时间: 可选文本,
           参加工作时间: 可选文本,
         })
+        .passthrough()
         .prefault({}),
 
       能力评估: z
@@ -296,6 +309,7 @@ export const GameSchema = z.object({
           表演功底: 百分比数值.prefault(0),
           厚黑指数: 百分比数值.prefault(0),
         })
+        .passthrough()
         .prefault({}),
 
       现任职务: z
@@ -314,7 +328,8 @@ export const GameSchema = z.object({
               z.string(),
               z.object({
                 职务名称: 可选文本,
-              }),
+              })
+                .passthrough(),
             )
             .prefault({}),
           分管领域: z
@@ -322,10 +337,12 @@ export const GameSchema = z.object({
               z.string(),
               z.object({
                 领域名称: 可选文本,
-              }),
+              })
+                .passthrough(),
             )
             .prefault({}),
         })
+        .passthrough()
         .prefault({}),
 
       晋升状态: z
@@ -335,6 +352,7 @@ export const GameSchema = z.object({
           预计解除: 可选文本,
           下一目标: 可选文本,
         })
+        .passthrough()
         .prefault({}),
 
       政治生态: z
@@ -346,6 +364,7 @@ export const GameSchema = z.object({
           年度考核: 可选文本,
           班子内站位: 可选文本,
         })
+        .passthrough()
         .prefault({}),
 
       任职履历: z
@@ -360,7 +379,8 @@ export const GameSchema = z.object({
             结束年月: 可选文本,
             主要政绩: 可选文本,
             离任原因: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
 
@@ -375,7 +395,8 @@ export const GameSchema = z.object({
             风险等级: 可选文本,
             预计完成: 可选文本,
             关联人物: z.array(z.string()).prefault([]),
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
 
@@ -386,7 +407,8 @@ export const GameSchema = z.object({
             名称: 可选文本,
             授予单位: 可选文本,
             时间: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
 
@@ -398,10 +420,12 @@ export const GameSchema = z.object({
             处分原因: 可选文本,
             处分时间: 可选文本,
             影响期限: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
     })
+    .passthrough()
     .prefault({}),
 
   派系图谱: z
@@ -414,6 +438,7 @@ export const GameSchema = z.object({
           实力评估: 可选文本,
           近期动向: 可选文本,
         })
+        .passthrough()
         .prefault({}),
       主要派系: z
         .record(
@@ -425,10 +450,12 @@ export const GameSchema = z.object({
             实力评估: 可选文本,
             与我派系关系: 可选文本,
             近期动向: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
     })
+    .passthrough()
     .prefault({}),
 
   绯色履历: z
@@ -441,7 +468,8 @@ export const GameSchema = z.object({
         关系性质: 可选文本,
         结局: 可选文本,
         遗留问题: 可选文本,
-      }),
+      })
+        .passthrough(),
     )
     .prefault({}),
 
@@ -460,7 +488,8 @@ export const GameSchema = z.object({
             估值: 万元金额,
             来源: 可选文本,
             登记人: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       座驾: z
@@ -469,7 +498,8 @@ export const GameSchema = z.object({
           z.object({
             品牌型号: 可选文本,
             来源: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       白手套: z
@@ -480,10 +510,12 @@ export const GameSchema = z.object({
             代持内容: 可选文本,
             代持金额: 万元金额,
             可靠程度: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
     })
+    .passthrough()
     .prefault({}),
 
   暗账: z
@@ -498,7 +530,8 @@ export const GameSchema = z.object({
             致命程度: 可选文本,
             暴露风险: 可选文本,
             当前状态: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       手握把柄: z
@@ -509,7 +542,8 @@ export const GameSchema = z.object({
             目标人物: 可选文本,
             致命程度: 可选文本,
             可用性: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       政治地雷: z
@@ -521,7 +555,8 @@ export const GameSchema = z.object({
             来源: 可选文本,
             引爆条件: 可选文本,
             杀伤力: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       人情债: z
@@ -535,6 +570,7 @@ export const GameSchema = z.object({
         })
         .prefault({}),
     })
+    .passthrough()
     .prefault({}),
 
   机遇与危机: z
@@ -550,7 +586,8 @@ export const GameSchema = z.object({
             时效性: 可选文本,
             所需资源: 可选文本,
             潜在代价: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       潜在危机: z
@@ -563,7 +600,8 @@ export const GameSchema = z.object({
             危机来源: 可选文本,
             引爆概率: 可选文本,
             应对思路: 可选文本,
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
       待办事项: z
@@ -574,12 +612,14 @@ export const GameSchema = z.object({
             紧急程度: 可选文本,
             截止时间: 可选文本,
             关联人物: z.array(z.string()).prefault([]),
-          }),
+          })
+            .passthrough(),
         )
         .prefault({}),
     })
+    .passthrough()
     .prefault({}),
-});
+}).passthrough();
 
 export type GameData = z.infer<typeof GameSchema>;
 export type 人物 = z.infer<typeof 人物Schema>;

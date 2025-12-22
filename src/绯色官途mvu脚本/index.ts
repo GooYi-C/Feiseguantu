@@ -116,6 +116,15 @@ IP标记:禁用
     // 示例: ['^<StatusPlaceHolderImpl/>', '\\[mvu_plot\\]']
     promptFilterPatterns: z.array(z.string()).default(['<StatusPlaceHolderImpl/>', '<xx>.*?</xx>']),
 
+    // ═══ 正文标签提取和排除配置 ═══
+    // 正文标签提取：从上下文中提取指定标签的内容发送给LLM2
+    // 例如: "context" 表示只提取 <context>...</context> 中的内容
+    contextExtractTags: z.string().default('content,progress,Phone'),
+
+    // 标签排除：将指定标签内容从上下文中移除
+    // 例如: "options,tucao,thinking" 表示排除这三个标签的内容
+    contextExcludeTags: z.string().default('options,tucao,thinking'),
+
     // ═══ 开局变量生成配置 ═══
     // 开局系统Prompt
     startupSystemPrompt: z.string().default(`<meta>
@@ -170,7 +179,10 @@ IP标记:禁用
 const SettingsSchema = z
   .object({
     // 是否启用额外模型解析
-    enableExtraModelParsing: z.boolean().default(false),
+    enableExtraModelParsing: z.boolean().default(true),
+
+    // 是否使用主API（与酒馆插头相同）
+    useMainApi: z.boolean().default(true),
 
     // API配置
     apiConfig: ApiConfigSchema,
@@ -276,6 +288,91 @@ function getScriptSettings(): Settings {
   } catch {
     return SettingsSchema.parse({});
   }
+}
+
+// ═══ 正文标签提取和排除辅助函数 ═══
+// 解析标签列表：支持英文逗号/中文逗号/空格分隔
+function parseTagList(input: string): string[] {
+  if (!input || typeof input !== 'string') return [];
+  return input
+    .split(/[,，\s]+/g)
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => t.replace(/[<>]/g, '')); // 防止用户输入 <tag>
+}
+
+// 从文本中提取指定标签的内容（正文标签提取）
+// 如果指定了标签（如 "content"），则只提取 <context>...</context> 中的内容
+function extractContextTags(text: string, tagNames: string[]): string {
+  if (!text || !tagNames || tagNames.length === 0) {
+    return text;
+  }
+
+  let result = text;
+  const extractedParts: string[] = [];
+
+  tagNames.forEach(tagName => {
+    const content = extractLastTagContent(result, tagName);
+    if (content !== null) {
+      extractedParts.push(`<${tagName}>${content}</${tagName}>`);
+    }
+  });
+
+  if (extractedParts.length > 0) {
+    result = extractedParts.join('\n\n');
+  }
+
+  return result;
+}
+
+// 辅助函数：提取文本中最后一个指定标签的内容
+function extractLastTagContent(text: string, tagName: string): string | null {
+  if (!text || !tagName) return null;
+  const lower = text.toLowerCase();
+  const open = `<${tagName.toLowerCase()}>`;
+  const close = `</${tagName.toLowerCase()}>`;
+
+  const closeIdx = lower.lastIndexOf(close);
+  if (closeIdx === -1) return null;
+
+  const openIdx = lower.lastIndexOf(open, closeIdx);
+  if (openIdx === -1) return null;
+
+  const contentStart = openIdx + open.length;
+  const content = text.slice(contentStart, closeIdx);
+  return content;
+}
+
+// 从文本中移除指定标签块：<tag>...</tag>（大小写不敏感，支持属性）
+function removeTaggedBlocks(text: string, tagNames: string[]): string {
+  if (!text || !Array.isArray(tagNames) || tagNames.length === 0) return text;
+  let result = String(text);
+  tagNames.forEach(tag => {
+    if (!tag) return;
+    const safe = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`<\\s*${safe}\\b[^>]*>[\\s\\S]*?<\\s*\\/\\s*${safe}\\s*>`, 'gi');
+    result = result.replace(re, '');
+  });
+  // 清理多余空行
+  result = result.replace(/\n{3,}/g, '\n\n').trim();
+  return result;
+}
+
+// 上下文筛选：标签提取 + 标签排除（可单独生效，也可叠加）
+function applyContextTagFilters(
+  text: string,
+  { extractTags = '', excludeTags = '' }: { extractTags?: string; excludeTags?: string } = {},
+): string {
+  let result = String(text ?? '');
+  const includeList = parseTagList(extractTags);
+  const excludeList = parseTagList(excludeTags);
+  if (includeList.length > 0) {
+    result = extractContextTags(result, includeList);
+  }
+  if (excludeList.length > 0) {
+    result = removeTaggedBlocks(result, excludeList);
+  }
+  return result;
 }
 
 function saveScriptSettings(newSettings: Settings): void {
@@ -391,10 +488,6 @@ async function buildPromptForParsing(): Promise<{
   const prompts: RolePrompt[] = [];
   const previewParts: string[] = [];
 
-  // 获取角色信息
-  const charId = SillyTavern.characterId;
-  const charInfo = charId !== undefined ? SillyTavern.characters?.[Number(charId)] : undefined;
-
   // 1. 系统指引prompt
   if (promptConfig.customSystemPrompt) {
     prompts.push({
@@ -432,8 +525,10 @@ async function buildPromptForParsing(): Promise<{
   // }
 
   // 5. 自动注入LLM2使用的世界书条目（基于tag筛选）
-  // 规则：含[mvu_update]的条目 或 无任何mvu标签的条目
-  const llm2WorldContent = await getLorebookContentForLLM2();
+  // 规则：含[mvu_update]的条目（普通解析），如果当前在0层则也包含[mvu_start]的条目
+  const currentMessageId = getLastMessageId();
+  const isStartupLayer = currentMessageId === 0;
+  const llm2WorldContent = await getLorebookContentForLLM2(isStartupLayer);
   if (llm2WorldContent) {
     prompts.push({
       role: 'system',
@@ -485,7 +580,22 @@ async function buildPromptForParsing(): Promise<{
   });
   previewParts.push(`【用户请求】\n${userPrompt}`);
 
-  // 8. 应用正则过滤器 (开发者配置)
+  // 8. 应用正文标签提取和排除过滤器
+  const extractTags = (promptConfig.contextExtractTags || '').trim();
+  const excludeTags = (promptConfig.contextExcludeTags || '').trim();
+  if (extractTags || excludeTags) {
+    for (const prompt of prompts) {
+      prompt.content = applyContextTagFilters(prompt.content, { extractTags, excludeTags });
+    }
+    if (extractTags) {
+      console.info(`[绯色官途MVU] 已应用正文标签提取: ${extractTags}`);
+    }
+    if (excludeTags) {
+      console.info(`[绯色官途MVU] 已应用标签排除: ${excludeTags}`);
+    }
+  }
+
+  // 9. 应用正则过滤器 (开发者配置)
   const filterPatterns = promptConfig.promptFilterPatterns || [];
   if (filterPatterns.length > 0) {
     for (const prompt of prompts) {
@@ -538,6 +648,11 @@ async function getLorebookContentByTag(tag: string): Promise<string> {
         // 按 order 字段升序排序，与酒馆保持一致
         entries.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         for (const entry of entries) {
+          // 铁律：关闭的词条永不注入（只有明确 enabled === true 的才会注入）
+          if (entry.enabled !== true) {
+            continue;
+          }
+
           const comment = (entry.comment || '').toLowerCase();
           // 检查条目名称是否包含指定标签
           if (comment.includes(tagLower)) {
@@ -555,12 +670,15 @@ async function getLorebookContentByTag(tag: string): Promise<string> {
     console.error('[绯色官途MVU] 获取世界书列表失败:', e);
   }
 
-  return contents.join('\n\n---\n\n');
+  return contents.join('\n');
 }
 
 // ═══ 获取LLM2使用的世界书条目内容 ═══
-// 规则：含[mvu_update]标签的条目 + 无任何mvu标签的条目
-async function getLorebookContentForLLM2(): Promise<string> {
+// 规则：
+// - 在0层（isStartupLayer=true）：只注入带[mvu_start]的条目（无论是否同时带[mvu_update]）
+// - 在非0层（isStartupLayer=false）：只注入带[mvu_update]的条目（无论是否同时带[mvu_start]）
+// - 不带任何标签的条目不应该注入到LLM2
+async function getLorebookContentForLLM2(isStartupLayer: boolean = false): Promise<string> {
   const contents: string[] = [];
 
   try {
@@ -581,19 +699,29 @@ async function getLorebookContentForLLM2(): Promise<string> {
         // 按 order 字段升序排序，与酒馆保持一致
         entries.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         for (const entry of entries) {
+          // 铁律：关闭的词条永不注入（只有明确 enabled === true 的才会注入）
+          if (entry.enabled !== true) {
+            continue;
+          }
+
           const comment = (entry.comment || '').toLowerCase();
           const hasMvuUpdate = comment.includes('[mvu_update]');
-          const hasMvuPlot = comment.includes('[mvu_plot]');
           const hasMvuStart = comment.includes('[mvu_start]');
-          const hasAnyMvuTag = hasMvuUpdate || hasMvuPlot || hasMvuStart;
 
-          // 规则：含[mvu_update]的条目 或 无任何mvu标签的条目
-          if (hasMvuUpdate || !hasAnyMvuTag) {
-            if (entry.content && entry.content.trim()) {
-              // const entryComment = entry.comment || '未命名条目';
+          // 规则：
+          // - 在0层：只注入带[mvu_start]的条目（无论是否同时带[mvu_update]）
+          // - 在非0层：只注入带[mvu_update]的条目（无论是否同时带[mvu_start]）
+          // - 不带任何标签的条目：不注入
+          if (isStartupLayer) {
+            // 0层：只注入带[mvu_start]的条目
+            if (hasMvuStart && entry.content && entry.content.trim()) {
               contents.push(`${entry.content}`);
             }
+          } else if (hasMvuUpdate && entry.content && entry.content.trim()) {
+            // 非0层：只注入带[mvu_update]的条目
+            contents.push(`${entry.content}`);
           }
+          // 不带标签的条目跳过，不注入LLM2
         }
       } catch (e) {
         console.warn(`[绯色官途MVU] 获取世界书 ${lorebookName} 条目失败:`, e);
@@ -652,7 +780,22 @@ async function buildStartupPrompt(startupDescription: string): Promise<{
   });
   previewParts.push(`【用户请求】\n${userPrompt}`);
 
-  // 5. 应用正则过滤器
+  // 5. 应用正文标签提取和排除过滤器
+  const extractTags = (promptConfig.contextExtractTags || '').trim();
+  const excludeTags = (promptConfig.contextExcludeTags || '').trim();
+  if (extractTags || excludeTags) {
+    for (const prompt of prompts) {
+      prompt.content = applyContextTagFilters(prompt.content, { extractTags, excludeTags });
+    }
+    if (extractTags) {
+      console.info(`[绯色官途MVU] 开局已应用正文标签提取: ${extractTags}`);
+    }
+    if (excludeTags) {
+      console.info(`[绯色官途MVU] 开局已应用标签排除: ${excludeTags}`);
+    }
+  }
+
+  // 6. 应用正则过滤器
   const filterPatterns = promptConfig.promptFilterPatterns || [];
   if (filterPatterns.length > 0) {
     for (const prompt of prompts) {
@@ -707,35 +850,28 @@ async function generateStartupVariables(startupDescription: string): Promise<voi
 
     eventEmit(SCARLET_MVU_EVENTS.PARSING_PROGRESS, '正在生成开局变量...');
 
-    let response: string;
-    const config = settings.apiConfig;
+    // 构建 custom_api 参数（仅在不使用主API且配置了自定义API时需要）
+    const startupApiConfig =
+      !settings.useMainApi && settings.apiConfig.apiUrl && settings.apiConfig.modelName
+        ? {
+            apiurl: settings.apiConfig.apiUrl,
+            key: settings.apiConfig.apiKey,
+            model: settings.apiConfig.modelName,
+            max_tokens: settings.apiConfig.maxTokens,
+            temperature: settings.apiConfig.temperature,
+            frequency_penalty: settings.apiConfig.frequencyPenalty,
+            presence_penalty: settings.apiConfig.presencePenalty,
+            top_p: settings.apiConfig.topP,
+          }
+        : undefined;
 
-    // 根据是否启用额外模型解析，决定使用哪个模型
-    if (settings.enableExtraModelParsing && config.apiUrl && config.modelName) {
-      // 使用LLM2（额外模型）
-      response = await generateRaw({
-        custom_api: {
-          apiurl: config.apiUrl,
-          key: config.apiKey,
-          model: config.modelName,
-          max_tokens: config.maxTokens,
-          temperature: config.temperature,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          top_p: config.topP,
-        },
-        ordered_prompts: prompts,
-        should_stream: false,
-        generation_id: currentGenerationId || undefined,
-      });
-    } else {
-      // 使用LLM1（酒馆主API）
-      response = await generateRaw({
-        ordered_prompts: prompts,
-        should_stream: false,
-        generation_id: currentGenerationId || undefined,
-      });
-    }
+    // 发送请求（如果有自定义API配置则使用，否则使用主API）
+    const response = await generateRaw({
+      custom_api: startupApiConfig,
+      ordered_prompts: prompts,
+      should_stream: false,
+      generation_id: currentGenerationId || undefined,
+    });
 
     isInExtraModelParsing = false;
 
@@ -1053,11 +1189,13 @@ async function retryExtraModelParsing(): Promise<void> {
     return;
   }
 
-  // 检查API配置
-  const config = settings.apiConfig;
-  if (!config.apiUrl || !config.modelName) {
-    toastr.warning('请先配置API地址和模型名称', '[绯色官途]');
-    return;
+  // 检查API配置（仅在不使用主API时需要检查自定义配置）
+  if (!settings.useMainApi) {
+    const config = settings.apiConfig;
+    if (!config.apiUrl || !config.modelName) {
+      toastr.warning('请先配置API地址和模型名称', '[绯色官途]');
+      return;
+    }
   }
 
   isParsingInProgress = true;
@@ -1129,55 +1267,48 @@ async function retryExtraModelParsing(): Promise<void> {
 
     eventEmit(SCARLET_MVU_EVENTS.PARSING_PROGRESS, '正在调用额外模型解析...');
 
-    let response: string;
     const promptConfig = settings.promptConfig;
 
+    // 构建 custom_api 参数（仅在不使用主API时需要）
+    const customApiConfig = settings.useMainApi
+      ? undefined
+      : {
+          apiurl: settings.apiConfig.apiUrl,
+          key: settings.apiConfig.apiKey,
+          model: settings.apiConfig.modelName,
+          max_tokens: settings.apiConfig.maxTokens,
+          temperature: settings.apiConfig.temperature,
+          frequency_penalty: settings.apiConfig.frequencyPenalty,
+          presence_penalty: settings.apiConfig.presencePenalty,
+          top_p: settings.apiConfig.topP,
+        };
+
     // 使用generateRaw完全控制发送的内容
-    if (promptConfig.sendPreset) {
-      // 如果用户选择发送预设，使用generate
-      response = await generate({
-        user_input: promptConfig.customUserPrompt || '请根据上述信息与指南，分析并输出变量更新命令。',
-        custom_api: {
-          apiurl: config.apiUrl,
-          key: config.apiKey,
-          model: config.modelName,
-          max_tokens: config.maxTokens,
-          temperature: config.temperature,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          top_p: config.topP,
-        },
-        injects: [
-          {
-            position: 'in_chat',
-            depth: 0,
-            should_scan: false,
-            role: 'system',
-            content: promptConfig.customSystemPrompt,
-          },
-        ],
-        max_chat_history: promptConfig.maxChatHistory,
-        should_stream: false,
-        generation_id: currentGenerationId || undefined, // 添加生成ID用于中断
-      });
-    } else {
-      // 不发送预设，使用generateRaw完全自定义
-      response = await generateRaw({
-        custom_api: {
-          apiurl: config.apiUrl,
-          key: config.apiKey,
-          model: config.modelName,
-          max_tokens: config.maxTokens,
-          temperature: config.temperature,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          top_p: config.topP,
-        },
-        ordered_prompts: prompts,
-        should_stream: false,
-        generation_id: currentGenerationId || undefined, // 添加生成ID用于中断
-      });
-    }
+    const response = promptConfig.sendPreset
+      ? // 如果用户选择发送预设，使用generate
+        await generate({
+          user_input: promptConfig.customUserPrompt || '请根据上述信息与指南，分析并输出变量更新命令。',
+          custom_api: customApiConfig,
+          injects: [
+            {
+              position: 'in_chat',
+              depth: 0,
+              should_scan: false,
+              role: 'system',
+              content: promptConfig.customSystemPrompt,
+            },
+          ],
+          max_chat_history: promptConfig.maxChatHistory,
+          should_stream: false,
+          generation_id: currentGenerationId || undefined, // 添加生成ID用于中断
+        })
+      : // 不发送预设，使用generateRaw完全自定义
+        await generateRaw({
+          custom_api: customApiConfig,
+          ordered_prompts: prompts,
+          should_stream: false,
+          generation_id: currentGenerationId || undefined, // 添加生成ID用于中断
+        });
 
     isInExtraModelParsing = false;
 
@@ -1620,46 +1751,59 @@ function exportGlobalApi(): void {
 //
 // 此过滤器仅作用于 LLM1 的酒馆自动注入流程
 // 过滤规则（启用额外模型解析时）：
-// - LLM1 (主模型)：只接收含[mvu_plot]的条目，和什么都不包含的条目
-//   -> 移除：只含[mvu_update](不含[mvu_plot])的条目（仅LLM2使用）
-//   -> 移除：只含[mvu_start](不含[mvu_plot])的条目（仅开局使用）
+// - LLM1 (主模型)：①不带任何标签（不带[mvu_update]且不带[mvu_start]） 或者 ②显式含有标签[mvu_plot]
+//   -> 移除：带[mvu_update]且不带[mvu_plot]的条目（只给LLM2用）
+//   -> 移除：带[mvu_start]且不带[mvu_plot]的条目（只给开局用）
 //
 // LLM2和开局的世界书注入由以下函数手动构建（基于tag自动筛选，不经过此过滤器）：
-// - LLM2：getLorebookContentForLLM2() - 注入 [mvu_update] 或无标签的条目
+// - LLM2：getLorebookContentForLLM2() - 0层时只注入带 [mvu_start] 的条目，非0层时只注入带 [mvu_update] 的条目
 // - 开局：getLorebookContentByTag('mvu_start') - 只注入 [mvu_start] 的条目
 function setupWorldInfoFilter(): void {
   eventOn(
     tavern_events.WORLDINFO_ENTRIES_LOADED,
     (lores: {
-      globalLore: Array<{ comment?: string }>;
-      characterLore: Array<{ comment?: string }>;
-      chatLore: Array<{ comment?: string }>;
-      personaLore: Array<{ comment?: string }>;
+      globalLore: Array<{ comment?: string; enabled?: boolean; disable?: boolean }>;
+      characterLore: Array<{ comment?: string; enabled?: boolean; disable?: boolean }>;
+      chatLore: Array<{ comment?: string; enabled?: boolean; disable?: boolean }>;
+      personaLore: Array<{ comment?: string; enabled?: boolean; disable?: boolean }>;
     }) => {
       // 如果未启用额外模型解析，或者当前正在进行额外模型解析（LLM2），则不过滤
       if (!settings.enableExtraModelParsing || isInExtraModelParsing) {
         return;
       }
 
-      // 对LLM1的请求，过滤掉只给LLM2用的条目
+      // 对LLM1的请求，过滤掉只给LLM2/开局用的条目
       // 规则：
-      // - 移除带[mvu_update]且不带[mvu_plot]的条目（只给LLM2用）
-      // - 移除带[mvu_start]且不带[mvu_plot]的条目（只给开局用）
-      const filterEntries = (entries: Array<{ comment?: string }>) => {
+      // - LLM1：①不带任何标签（不带[mvu_update]且不带[mvu_start]） 或者 ②显式含有标签[mvu_plot]
+      // - 移除：带[mvu_update]且不带[mvu_plot]的条目（只给LLM2用）
+      // - 移除：带[mvu_start]且不带[mvu_plot]的条目（只给开局用）
+      const filterEntries = (entries: Array<{ comment?: string; enabled?: boolean; disable?: boolean }>) => {
         for (let i = entries.length - 1; i >= 0; i--) {
           const entry = entries[i];
+
+          // 铁律：关闭的词条永不注入
+          // 检查 enabled 字段（如果存在）：enabled !== true 表示禁用
+          // 检查 disable 字段（如果存在）：disable === true 表示禁用
+          const isDisabled =
+            (entry.enabled !== undefined && entry.enabled !== true) ||
+            (entry.disable !== undefined && entry.disable === true);
+          if (isDisabled) {
+            entries.splice(i, 1);
+            continue;
+          }
+
           const comment = (entry.comment || '').toLowerCase();
           const hasMvuUpdate = comment.includes('[mvu_update]');
           const hasMvuPlot = comment.includes('[mvu_plot]');
           const hasMvuStart = comment.includes('[mvu_start]');
 
-          // 如果只有[mvu_update]没有[mvu_plot]，则是只给LLM2用的，移除
+          // 如果带[mvu_update]且不带[mvu_plot]，则是只给LLM2用的，移除
           if (hasMvuUpdate && !hasMvuPlot) {
             entries.splice(i, 1);
             continue;
           }
 
-          // 如果只有[mvu_start]没有[mvu_plot]，则是只给开局用的，移除
+          // 如果带[mvu_start]且不带[mvu_plot]，则是只给开局用的，移除
           if (hasMvuStart && !hasMvuPlot) {
             entries.splice(i, 1);
             continue;
@@ -1672,7 +1816,7 @@ function setupWorldInfoFilter(): void {
       filterEntries(lores.chatLore);
       filterEntries(lores.personaLore);
 
-      console.info('[绯色官途MVU] 已过滤世界书条目 (移除仅LLM2/开局使用的条目)');
+      console.info('[绯色官途MVU] 已过滤世界书条目 (移除仅LLM2/开局使用的条目，以及关闭的条目)');
     },
   );
 }

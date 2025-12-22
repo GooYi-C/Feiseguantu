@@ -42,8 +42,11 @@ export function generateSchema(
                 oldElementType = oldSchemaNode.elementType;
                 template = oldSchemaNode.template;
             } else {
-                console.error(
-                    `Type mismatch: expected array schema but got ${oldSchemaNode.type} at path`
+                // 当旧 schema 类型不匹配时，只记录警告而不报错
+                // 这允许 LLM 添加新字段时 schema reconciliation 能够正常进行
+                const oldType = oldSchemaNode?.type ?? 'undefined';
+                console.warn(
+                    `Schema type mismatch: expected array schema but got ${oldType}. This is normal when new fields are added.`
                 );
             }
         }
@@ -112,8 +115,11 @@ export function generateSchema(
                     oldSchemaNode.recursiveExtensible === true || parentRecursiveExtensible;
                 oldProperties = oldSchemaNode.properties;
             } else {
-                console.error(
-                    `Type mismatch: expected object schema but got ${oldSchemaNode.type} at path`
+                // 当旧 schema 类型不匹配时，只记录警告而不报错
+                // 这允许 LLM 添加新字段时 schema reconciliation 能够正常进行
+                const oldType = oldSchemaNode?.type ?? 'undefined';
+                console.warn(
+                    `Schema type mismatch: expected object schema but got ${oldType}. This is normal when new fields are added.`
                 );
             }
         }
