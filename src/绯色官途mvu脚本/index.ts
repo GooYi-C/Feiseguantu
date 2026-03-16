@@ -1434,16 +1434,26 @@ async function applyVariableUpdate(messageId: number, originalMessage: string, u
     );
     console.info('[绯色官途MVU] 已清除当前楼层变量，准备调用MVU内部处理函数...');
 
-    // 5. 调用 MVU 内部的 handleVariablesInMessage 函数
-    // 这个函数是 MVU 导出到 window.parent 的，与"重新处理变量"按钮使用相同的处理流程
-    // 它会：从前一楼层继承变量 → 解析更新命令 → 写回变量 → 刷新显示
-    const handleVariablesInMessage = (window.parent as any).handleVariablesInMessage;
-    if (typeof handleVariablesInMessage === 'function') {
-      await handleVariablesInMessage(messageId);
-      console.info('[绯色官途MVU] MVU 变量处理完成');
+    // 5. 处理变量更新：优先用 MVU 扩展的内部函数，不可用时用公开 API
+    const handleVarsFn = (window.parent as any).handleVariablesInMessage;
+    if (typeof handleVarsFn === 'function') {
+      await handleVarsFn(messageId);
+      console.info('[绯色官途MVU] 通过 MVU 扩展内部函数处理变量完成');
     } else {
-      console.error('[绯色官途MVU] handleVariablesInMessage 函数不可用');
-      throw new Error('MVU 内部函数不可用，请确保 MVU 扩展已正确加载');
+      console.warn('[绯色官途MVU] handleVariablesInMessage 不可用，使用 Mvu.parseMessage 替代');
+      const prevId = messageId > 0 ? messageId - 1 : 0;
+      const prevVars = getLastValidMvuData(prevId);
+      if (!prevVars) {
+        throw new Error('无法获取上一楼层变量用于更新');
+      }
+      const updatedVars = await Mvu.parseMessage(newMessage, prevVars);
+      if (updatedVars) {
+        await Mvu.replaceMvuData(updatedVars, { type: 'message', message_id: messageId });
+      } else {
+        // parseMessage 返回 undefined 表示无变量变更，保留原有变量
+        await Mvu.replaceMvuData(prevVars, { type: 'message', message_id: messageId });
+      }
+      console.info('[绯色官途MVU] 通过 Mvu.parseMessage 替代方案处理变量完成');
     }
 
     // 6. 刷新显示
