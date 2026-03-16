@@ -48,10 +48,7 @@
                 <!-- 默认字段渲染 -->
                 <div class="field-grid">
                   <template v-for="(value, fieldKey) in item" :key="fieldKey">
-                    <div
-                      class="field-row"
-                      :class="{ full: isLongField(fieldKey as string, value) }"
-                    >
+                    <div class="field-row" :class="{ full: isLongField(fieldKey as string, value) }">
                       <label>{{ fieldKey }}</label>
                       <template v-if="isArrayField(value)">
                         <div class="array-value">
@@ -65,7 +62,9 @@
                         <input
                           type="number"
                           :value="value"
-                          @input="updateItemField(key, fieldKey as string, ($event.target as HTMLInputElement).valueAsNumber)"
+                          @input="
+                            updateItemField(key, fieldKey as string, ($event.target as HTMLInputElement).valueAsNumber)
+                          "
                         />
                       </template>
                       <template v-else-if="isBooleanField(value)">
@@ -73,7 +72,9 @@
                           <input
                             type="checkbox"
                             :checked="value"
-                            @change="updateItemField(key, fieldKey as string, ($event.target as HTMLInputElement).checked)"
+                            @change="
+                              updateItemField(key, fieldKey as string, ($event.target as HTMLInputElement).checked)
+                            "
                           />
                           <span>{{ value ? '是' : '否' }}</span>
                         </label>
@@ -82,7 +83,9 @@
                         <textarea
                           :value="value"
                           rows="2"
-                          @input="updateItemField(key, fieldKey as string, ($event.target as HTMLTextAreaElement).value)"
+                          @input="
+                            updateItemField(key, fieldKey as string, ($event.target as HTMLTextAreaElement).value)
+                          "
                         ></textarea>
                       </template>
                       <template v-else>
@@ -617,4 +620,3 @@ defineExpose({ expandAll, collapseAll });
   max-height: 1000px;
 }
 </style>
-

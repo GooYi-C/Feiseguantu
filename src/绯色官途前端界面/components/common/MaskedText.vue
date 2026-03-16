@@ -14,19 +14,12 @@
     </div>
 
     <!-- 手动遮罩按钮（仅在解锁状态显示） -->
-    <button
-      v-if="!isMasked && showLockButton"
-      class="lock-btn"
-      @click="lock"
-      title="隐藏内容"
-    >
+    <button v-if="!isMasked && showLockButton" class="lock-btn" @click="lock" title="隐藏内容">
       <i class="fas fa-eye"></i>
     </button>
 
     <!-- 自动遮罩倒计时 -->
-    <div v-if="!isMasked && autoLockSeconds > 0" class="countdown">
-      {{ remainingSeconds }}s
-    </div>
+    <div v-if="!isMasked && autoLockSeconds > 0" class="countdown">{{ remainingSeconds }}s</div>
   </div>
 </template>
 
@@ -52,7 +45,7 @@ const props = withDefaults(
     initialMasked: true,
     autoLockSeconds: 10,
     showLockButton: true,
-  }
+  },
 );
 
 const emit = defineEmits<{
@@ -110,7 +103,7 @@ watch(
     if (newVal) {
       lock();
     }
-  }
+  },
 );
 
 onMounted(() => {
@@ -225,4 +218,3 @@ onUnmounted(() => {
   z-index: 1;
 }
 </style>
-

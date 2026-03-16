@@ -41,4 +41,3 @@ export const useCharacterDrawer = defineStore('characterDrawer', () => {
     close,
   };
 });
-

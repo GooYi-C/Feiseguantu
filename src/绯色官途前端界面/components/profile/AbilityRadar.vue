@@ -3,12 +3,7 @@
     <svg :viewBox="`0 0 ${props.size} ${props.size}`" class="radar-svg">
       <!-- 背景网格 -->
       <g class="radar-grid">
-        <polygon
-          v-for="level in [20, 40, 60, 80, 100]"
-          :key="level"
-          :points="getGridPoints(level)"
-          class="grid-line"
-        />
+        <polygon v-for="level in [20, 40, 60, 80, 100]" :key="level" :points="getGridPoints(level)" class="grid-line" />
         <!-- 轴线 -->
         <line
           v-for="(_, i) in abilities"
@@ -75,11 +70,7 @@
     <!-- 悬浮说明 -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
-          v-if="tooltip.visible"
-          class="ability-tooltip"
-          :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
-        >
+        <div v-if="tooltip.visible" class="ability-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
           <h4>{{ tooltip.ability?.label }}</h4>
           <p class="value">
             当前值: {{ tooltip.ability?.value }}
@@ -150,7 +141,7 @@ const abilities = computed(() =>
     key,
     label: key,
     value: value || 0,
-  }))
+  })),
 );
 
 const highestAbility = computed(() => {
@@ -165,21 +156,13 @@ const lowestAbility = computed(() => {
   return abilities.value.find(a => a.value === min)?.key;
 });
 
-const highestAbilityLabel = computed(() =>
-  abilities.value.find(a => a.key === highestAbility.value)?.label ?? '无'
-);
+const highestAbilityLabel = computed(() => abilities.value.find(a => a.key === highestAbility.value)?.label ?? '无');
 
-const highestAbilityValue = computed(() =>
-  abilities.value.find(a => a.key === highestAbility.value)?.value ?? 0
-);
+const highestAbilityValue = computed(() => abilities.value.find(a => a.key === highestAbility.value)?.value ?? 0);
 
-const lowestAbilityLabel = computed(() =>
-  abilities.value.find(a => a.key === lowestAbility.value)?.label ?? '无'
-);
+const lowestAbilityLabel = computed(() => abilities.value.find(a => a.key === lowestAbility.value)?.label ?? '无');
 
-const lowestAbilityValue = computed(() =>
-  abilities.value.find(a => a.key === lowestAbility.value)?.value ?? 0
-);
+const lowestAbilityValue = computed(() => abilities.value.find(a => a.key === lowestAbility.value)?.value ?? 0);
 
 // 计算函数
 function getAngle(index: number): number {
@@ -229,7 +212,7 @@ const dataPoints = computed(() =>
       const p = getDataPoint(i);
       return `${p.x},${p.y}`;
     })
-    .join(' ')
+    .join(' '),
 );
 
 function getAbilityDescription(key?: string): string {
@@ -449,4 +432,3 @@ function hideTooltip() {
   opacity: 0;
 }
 </style>
-

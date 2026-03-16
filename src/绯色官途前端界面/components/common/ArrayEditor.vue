@@ -9,12 +9,7 @@
       <!-- 已有项目列表 -->
       <div class="tags-wrapper">
         <TransitionGroup name="tag">
-          <span
-            v-for="(item, index) in modelValue"
-            :key="item + index"
-            class="tag-item"
-            :class="tagColorClass(item)"
-          >
+          <span v-for="(item, index) in modelValue" :key="item + index" class="tag-item" :class="tagColorClass(item)">
             <span class="tag-text">{{ item }}</span>
             <button
               v-if="!disabled"
@@ -104,17 +99,15 @@ const isFocused = ref(false);
 const isEmpty = computed(() => props.modelValue.length === 0);
 
 const showSuggestions = computed(() => {
-  return (
-    !props.disabled &&
-    props.suggestions.length > 0 &&
-    filteredSuggestions.value.length > 0
-  );
+  return !props.disabled && props.suggestions.length > 0 && filteredSuggestions.value.length > 0;
 });
 
 // 过滤掉已添加的建议
 const filteredSuggestions = computed(() => {
   return props.suggestions.filter(
-    s => !props.modelValue.includes(s) && (inputValue.value === '' || s.toLowerCase().includes(inputValue.value.toLowerCase())),
+    s =>
+      !props.modelValue.includes(s) &&
+      (inputValue.value === '' || s.toLowerCase().includes(inputValue.value.toLowerCase())),
   );
 });
 
@@ -422,4 +415,3 @@ function tagColorClass(item: string): string {
   transition: transform 0.2s ease;
 }
 </style>
-

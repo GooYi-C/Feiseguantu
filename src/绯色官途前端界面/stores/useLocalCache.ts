@@ -249,4 +249,3 @@ export const useLocalCache = defineStore('localCache', () => {
     loadSettingsCache,
   };
 });
-

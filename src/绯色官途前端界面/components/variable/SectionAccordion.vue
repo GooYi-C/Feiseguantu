@@ -8,18 +8,11 @@
         <slot name="title">{{ title }}</slot>
       </h3>
       <div class="section-meta">
-        <span v-if="showCount" class="field-count">
-          {{ filledCount }} / {{ totalCount }}
-        </span>
+        <span v-if="showCount" class="field-count"> {{ filledCount }} / {{ totalCount }} </span>
         <slot name="meta"></slot>
       </div>
       <div class="section-actions" @click.stop>
-        <button
-          v-if="showSave && isExpanded"
-          class="btn-save"
-          :disabled="saving || !dirty"
-          @click="handleSave"
-        >
+        <button v-if="showSave && isExpanded" class="btn-save" :disabled="saving || !dirty" @click="handleSave">
           <i v-if="saving" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-save"></i>
           <span>保存</span>
@@ -231,4 +224,3 @@ defineExpose({ expand, collapse, isExpanded });
   max-height: 2000px;
 }
 </style>
-

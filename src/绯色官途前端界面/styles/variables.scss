@@ -209,9 +209,10 @@ ol {
 
 // ─── 卡片hover效果 ───
 .card-hover {
-  transition: transform var(--transition-fast),
-              box-shadow var(--transition-fast),
-              border-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
 
   &:hover {
     transform: translateY(-2px);
@@ -234,7 +235,7 @@ ol {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
     opacity: 0;
     transition: opacity var(--transition-fast);
     pointer-events: none;
@@ -299,8 +300,9 @@ ol {
 
 // ─── 列表项hover ───
 .list-item-hover {
-  transition: background var(--transition-fast),
-              padding-left var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    padding-left var(--transition-fast);
 
   &:hover {
     background: var(--color-bg-elevated);
@@ -320,13 +322,25 @@ ol {
 }
 
 @keyframes pulse-green {
-  0%, 100% { color: inherit; }
-  50% { color: var(--color-success); transform: scale(1.1); }
+  0%,
+  100% {
+    color: inherit;
+  }
+  50% {
+    color: var(--color-success);
+    transform: scale(1.1);
+  }
 }
 
 @keyframes pulse-red {
-  0%, 100% { color: inherit; }
-  50% { color: var(--color-danger); transform: scale(1.1); }
+  0%,
+  100% {
+    color: inherit;
+  }
+  50% {
+    color: var(--color-danger);
+    transform: scale(1.1);
+  }
 }
 
 // ─── 按钮hover增强 ───
@@ -368,8 +382,12 @@ ol {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 // ─── 上滑淡入 ───
@@ -387,4 +405,3 @@ ol {
     transform: translateY(0);
   }
 }
-

@@ -24,13 +24,7 @@
 
     <!-- 底部按钮 -->
     <template #footer>
-      <button
-        v-if="showCancel"
-        type="button"
-        class="btn btn-cancel"
-        :disabled="loading"
-        @click="handleCancel"
-      >
+      <button v-if="showCancel" type="button" class="btn btn-cancel" :disabled="loading" @click="handleCancel">
         <i v-if="cancelIcon" :class="cancelIcon"></i>
         {{ cancelText }}
       </button>
@@ -234,4 +228,3 @@ function handleCancel(): void {
   }
 }
 </style>
-

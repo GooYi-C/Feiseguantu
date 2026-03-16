@@ -115,9 +115,7 @@ export function useUiSettings() {
    * 检查是否为预设值
    */
   function isPreset(width: number, height: number): boolean {
-    return ASPECT_RATIO_PRESETS.some(
-      preset => preset.width === width && preset.height === height,
-    );
+    return ASPECT_RATIO_PRESETS.some(preset => preset.width === width && preset.height === height);
   }
 
   // 初始化时加载设置

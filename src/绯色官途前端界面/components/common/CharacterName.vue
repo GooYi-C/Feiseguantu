@@ -229,7 +229,7 @@ function tagClass(tag: string) {
   // 存在于人物库的角色 - 有背景的胶囊样式
   &.exists {
     background: rgba(100, 100, 100, 0.15);
-    
+
     &.clickable {
       cursor: pointer;
 
@@ -243,7 +243,7 @@ function tagClass(tag: string) {
     &.male {
       background: rgba(74, 144, 217, 0.15) !important;
       color: #5ba0e0 !important;
-      
+
       &:hover {
         background: rgba(74, 144, 217, 0.25) !important;
       }
@@ -253,7 +253,7 @@ function tagClass(tag: string) {
     &.female {
       background: rgba(232, 67, 147, 0.15) !important;
       color: #e84393 !important;
-      
+
       &:hover {
         background: rgba(232, 67, 147, 0.25) !important;
       }

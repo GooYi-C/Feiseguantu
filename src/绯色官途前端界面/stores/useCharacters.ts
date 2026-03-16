@@ -25,8 +25,7 @@ export const useCharacters = defineStore('characters', () => {
     人物列表.value
       .filter(
         ([, p]) =>
-          (p.绯色关系 && p.绯色关系.关系阶段 && p.绯色关系.关系阶段 !== '无') ||
-          p.角色标签?.includes('绯色对象'),
+          (p.绯色关系 && p.绯色关系.关系阶段 && p.绯色关系.关系阶段 !== '无') || p.角色标签?.includes('绯色对象'),
       )
       .map(([name, p]) => ({ name, ...p })),
   );
@@ -35,9 +34,7 @@ export const useCharacters = defineStore('characters', () => {
   const 靠山列表 = computed(() =>
     人物列表.value
       .filter(
-        ([, p]) =>
-          (p.靠山关系 && p.靠山关系.紧密度 && p.靠山关系.紧密度 !== '无') ||
-          p.角色标签?.includes('靠山'),
+        ([, p]) => (p.靠山关系 && p.靠山关系.紧密度 && p.靠山关系.紧密度 !== '无') || p.角色标签?.includes('靠山'),
       )
       .map(([name, p]) => ({ name, ...p })),
   );
@@ -47,8 +44,7 @@ export const useCharacters = defineStore('characters', () => {
     人物列表.value
       .filter(
         ([, p]) =>
-          (p.竞争关系 && p.竞争关系.竞争目标 && p.竞争关系.竞争目标 !== '无') ||
-          p.角色标签?.includes('竞争对手'),
+          (p.竞争关系 && p.竞争关系.竞争目标 && p.竞争关系.竞争目标 !== '无') || p.角色标签?.includes('竞争对手'),
       )
       .map(([name, p]) => ({ name, ...p })),
   );
@@ -56,11 +52,7 @@ export const useCharacters = defineStore('characters', () => {
   // 家属：需要有实际的家庭关系内容或有家属标签
   const 家属列表 = computed(() =>
     人物列表.value
-      .filter(
-        ([, p]) =>
-          (p.家庭关系 && p.家庭关系.关系 && p.家庭关系.关系 !== '无') ||
-          p.角色标签?.includes('家属'),
-      )
+      .filter(([, p]) => (p.家庭关系 && p.家庭关系.关系 && p.家庭关系.关系 !== '无') || p.角色标签?.includes('家属'))
       .map(([name, p]) => ({ name, ...p })),
   );
 
@@ -178,9 +170,7 @@ export const useCharacters = defineStore('characters', () => {
    * @param type 角色类型
    * @returns 匹配的人物列表
    */
-  function filterByType(
-    type: 'all' | 'romance' | 'backer' | 'rival' | 'family',
-  ): [string, 人物][] {
+  function filterByType(type: 'all' | 'romance' | 'backer' | 'rival' | 'family'): [string, 人物][] {
     if (type === 'all') {
       return 人物列表.value;
     }
@@ -194,8 +184,7 @@ export const useCharacters = defineStore('characters', () => {
           );
         case 'backer':
           return (
-            (char.靠山关系 && char.靠山关系.紧密度 && char.靠山关系.紧密度 !== '无') ||
-            char.角色标签?.includes('靠山')
+            (char.靠山关系 && char.靠山关系.紧密度 && char.靠山关系.紧密度 !== '无') || char.角色标签?.includes('靠山')
           );
         case 'rival':
           return (
@@ -204,8 +193,7 @@ export const useCharacters = defineStore('characters', () => {
           );
         case 'family':
           return (
-            (char.家庭关系 && char.家庭关系.关系 && char.家庭关系.关系 !== '无') ||
-            char.角色标签?.includes('家属')
+            (char.家庭关系 && char.家庭关系.关系 && char.家庭关系.关系 !== '无') || char.角色标签?.includes('家属')
           );
         default:
           return true;
@@ -248,4 +236,3 @@ export const useCharacters = defineStore('characters', () => {
     filterByGender,
   };
 });
-

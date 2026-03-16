@@ -259,4 +259,3 @@ export const useGameStore = defineStore('game', () => {
     setupEventListeners,
   };
 });
-

@@ -8,11 +8,7 @@
     <div class="slider-wrapper">
       <!-- 进度条背景 -->
       <div class="slider-track">
-        <div
-          class="slider-fill"
-          :class="fillColorClass"
-          :style="{ width: percentage + '%' }"
-        ></div>
+        <div class="slider-fill" :class="fillColorClass" :style="{ width: percentage + '%' }"></div>
       </div>
 
       <!-- 滑块输入 -->
@@ -343,4 +339,3 @@ function handleBlur(e: Event) {
   color: var(--color-text-muted);
 }
 </style>
-

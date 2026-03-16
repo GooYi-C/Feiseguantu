@@ -5,4 +5,3 @@
 
 export { default as SectionAccordion } from './SectionAccordion.vue';
 export { default as RecordTable } from './RecordTable.vue';
-

@@ -25,29 +25,21 @@
       </div>
       <div class="template-actions">
         <button class="btn-secondary" @click="close">取消</button>
-        <button class="btn-primary" @click="nextStep">
-          下一步 <i class="fas fa-arrow-right"></i>
-        </button>
+        <button class="btn-primary" @click="nextStep">下一步 <i class="fas fa-arrow-right"></i></button>
       </div>
     </div>
 
     <!-- 编辑表单 -->
     <div class="form-section" v-else>
       <div class="form-header">
-        <button class="btn-back" @click="prevStep">
-          <i class="fas fa-arrow-left"></i> 返回选择模板
-        </button>
+        <button class="btn-back" @click="prevStep"><i class="fas fa-arrow-left"></i> 返回选择模板</button>
         <span class="template-badge" v-if="selectedTemplate !== 'blank'">
           <i :class="currentTemplate?.icon"></i>
           {{ currentTemplate?.name }}
         </span>
       </div>
 
-      <CharacterForm
-        ref="formRef"
-        v-model="characterData"
-        mode="create"
-      />
+      <CharacterForm ref="formRef" v-model="characterData" mode="create" />
     </div>
 
     <template #footer v-if="step === 'form'">
@@ -443,4 +435,3 @@ watch(isOpen, val => {
   }
 }
 </style>
-

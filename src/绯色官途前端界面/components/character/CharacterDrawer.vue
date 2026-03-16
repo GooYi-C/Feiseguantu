@@ -509,7 +509,7 @@ async function saveEdit() {
 function handleAvatarUpload(dataUrl: string) {
   localCache.setAvatar(props.characterName, dataUrl);
   showAvatarUploader.value = false;
-    toastr.success('头像已更新');
+  toastr.success('头像已更新');
 }
 
 // ═══ 删除功能 ═══
@@ -1081,7 +1081,9 @@ watch(isOpen, val => {
       color: var(--color-text-primary);
       margin: 0;
 
-      i { color: var(--color-gold); }
+      i {
+        color: var(--color-gold);
+      }
     }
 
     .close-btn {

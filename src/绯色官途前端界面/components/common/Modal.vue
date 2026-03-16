@@ -25,13 +25,7 @@
                 {{ title }}
               </h3>
             </slot>
-            <button
-              v-if="showClose"
-              class="modal-close"
-              type="button"
-              aria-label="关闭"
-              @click="close"
-            >
+            <button v-if="showClose" class="modal-close" type="button" aria-label="关闭" @click="close">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -321,7 +315,9 @@ onUnmounted(() => {
   transition: opacity 0.2s ease;
 
   .modal-container {
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      opacity 0.2s ease;
   }
 }
 
@@ -335,4 +331,3 @@ onUnmounted(() => {
   }
 }
 </style>
-

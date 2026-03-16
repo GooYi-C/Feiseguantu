@@ -7,7 +7,7 @@
         <div class="column-header">
           <h3><i class="fas fa-triangle-exclamation"></i> 潜在危机</h3>
           <span class="column-count">{{ crisisTodo.totalCount.value }}</span>
-      </div>
+        </div>
         <div class="column-body">
           <div
             v-for="item in crisisTodo.mergedList.value"
@@ -16,26 +16,32 @@
             :class="{ completed: item.isHidden }"
           >
             <label class="todo-checkbox">
-              <input type="checkbox" :checked="item.isHidden" @change="crisisTodo.toggleItem(item.key, item.data, item.isHidden)" />
+              <input
+                type="checkbox"
+                :checked="item.isHidden"
+                @change="crisisTodo.toggleItem(item.key, item.data, item.isHidden)"
+              />
               <span class="checkmark"></span>
             </label>
             <div class="card-content">
               <div class="kanban-card-header">
                 <span class="kanban-title">{{ item.data.危机名称 || item.key }}</span>
                 <span class="level-badge" :class="crisisLevel(item.data.危机等级)">{{ item.data.危机等级 }}</span>
-            </div>
+              </div>
               <p class="kanban-content">{{ item.data.危机内容 }}</p>
               <div class="kanban-details">
                 <div class="detail-row">
                   <span><i class="fas fa-crosshairs"></i> 来源: {{ item.data.危机来源 }}</span>
-                  <span :class="probClass(item.data.引爆概率)"><i class="fas fa-bolt"></i> {{ item.data.引爆概率 }}</span>
-            </div>
+                  <span :class="probClass(item.data.引爆概率)"
+                    ><i class="fas fa-bolt"></i> {{ item.data.引爆概率 }}</span
+                  >
+                </div>
                 <div v-if="item.data.应对思路 && item.data.应对思路 !== '无'" class="detail-row solution">
                   <i class="fas fa-lightbulb"></i> {{ item.data.应对思路 }}
-            </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
           <div v-if="crisisTodo.totalCount.value === 0" class="empty-column">
             <i class="fas fa-shield-halved"></i>
             <span>暂无危机</span>
@@ -57,7 +63,11 @@
             :class="{ completed: item.isHidden }"
           >
             <label class="todo-checkbox">
-              <input type="checkbox" :checked="item.isHidden" @change="opportunityTodo.toggleItem(item.key, item.data, item.isHidden)" />
+              <input
+                type="checkbox"
+                :checked="item.isHidden"
+                @change="opportunityTodo.toggleItem(item.key, item.data, item.isHidden)"
+              />
               <span class="checkmark"></span>
             </label>
             <div class="card-content">
@@ -70,16 +80,16 @@
                 <div class="detail-row">
                   <span><i class="fas fa-route"></i> 来源: {{ item.data.来源渠道 }}</span>
                   <span><i class="fas fa-clock"></i> {{ item.data.时效性 }}</span>
-      </div>
+                </div>
                 <div v-if="item.data.所需资源 && item.data.所需资源 !== '无'" class="detail-row resource">
                   <i class="fas fa-toolbox"></i> 所需资源: {{ item.data.所需资源 }}
-            </div>
+                </div>
                 <div v-if="item.data.潜在代价 && item.data.潜在代价 !== '无'" class="detail-row warning">
                   <i class="fas fa-exclamation-triangle"></i> 潜在代价: {{ item.data.潜在代价 }}
-            </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
           <div v-if="opportunityTodo.totalCount.value === 0" class="empty-column">
             <i class="fas fa-seedling"></i>
             <span>暂无机遇</span>
@@ -92,7 +102,7 @@
         <div class="column-header">
           <h3><i class="fas fa-clipboard-list"></i> 待办事项</h3>
           <span class="column-count">{{ todoList.totalCount.value }}</span>
-      </div>
+        </div>
         <div class="column-body">
           <div
             v-for="item in todoList.mergedList.value"
@@ -101,39 +111,43 @@
             :class="[urgencyClass(item.data.紧急程度), { completed: item.isHidden }]"
           >
             <label class="todo-checkbox">
-              <input type="checkbox" :checked="item.isHidden" @change="todoList.toggleItem(item.key, item.data, item.isHidden)" />
+              <input
+                type="checkbox"
+                :checked="item.isHidden"
+                @change="todoList.toggleItem(item.key, item.data, item.isHidden)"
+              />
               <span class="checkmark"></span>
             </label>
             <div class="card-content">
               <div class="kanban-card-header">
                 <span class="kanban-title">{{ item.data.事项 }}</span>
                 <span class="urgency-badge" :class="urgencyClass(item.data.紧急程度)">{{ item.data.紧急程度 }}</span>
-            </div>
+              </div>
               <div class="kanban-meta">
                 <span v-if="item.data.截止时间 && item.data.截止时间 !== '无'" class="deadline-badge">
                   <i class="far fa-clock"></i> {{ item.data.截止时间 }}
-              </span>
+                </span>
                 <div v-if="item.data.关联人物.length" class="related-avatars">
-                <CharacterName
+                  <CharacterName
                     v-for="char in item.data.关联人物.slice(0, 2)"
-                  :key="char"
-                  :name="char"
+                    :key="char"
+                    :name="char"
                     class="mini-char"
-                />
+                  />
                   <span v-if="item.data.关联人物.length > 2" class="more-chars">
                     +{{ item.data.关联人物.length - 2 }}
                   </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
           <div v-if="todoList.totalCount.value === 0" class="empty-column">
             <i class="fas fa-check-circle"></i>
             <span>暂无待办</span>
           </div>
         </div>
       </div>
-      </div>
+    </div>
   </div>
 </template>
 
@@ -148,35 +162,47 @@ const gameData = useGameData();
 const 机遇与危机 = computed(() => gameData.机遇与危机);
 
 // 类型定义
-type 机遇类型 = typeof 机遇与危机.value.当前机遇[string];
-type 危机类型 = typeof 机遇与危机.value.潜在危机[string];
-type 待办类型 = typeof 机遇与危机.value.待办事项[string];
+type 机遇类型 = (typeof 机遇与危机.value.当前机遇)[string];
+type 危机类型 = (typeof 机遇与危机.value.潜在危机)[string];
+type 待办类型 = (typeof 机遇与危机.value.待办事项)[string];
 
 // ═══ 机遇 TodoList ═══
 const opportunityTodo = useTodoList<机遇类型>({
   getActiveItems: () => 机遇与危机.value.当前机遇,
-  deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.当前机遇[key]; },
-  restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.当前机遇[key] = data; },
+  deleteActiveItem: key => {
+    delete gameData.rawData.机遇与危机.当前机遇[key];
+  },
+  restoreActiveItem: (key, data) => {
+    gameData.rawData.机遇与危机.当前机遇[key] = data;
+  },
   saveToBackend: () => gameData.saveSection('机遇与危机'),
 });
 
 // ═══ 危机 TodoList ═══
 const crisisTodo = useTodoList<危机类型>({
   getActiveItems: () => 机遇与危机.value.潜在危机,
-  deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.潜在危机[key]; },
-  restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.潜在危机[key] = data; },
+  deleteActiveItem: key => {
+    delete gameData.rawData.机遇与危机.潜在危机[key];
+  },
+  restoreActiveItem: (key, data) => {
+    gameData.rawData.机遇与危机.潜在危机[key] = data;
+  },
   saveToBackend: () => gameData.saveSection('机遇与危机'),
 });
 
 // ═══ 待办事项 TodoList ═══
 const todoList = useTodoList<待办类型>({
   getActiveItems: () => 机遇与危机.value.待办事项,
-  deleteActiveItem: (key) => { delete gameData.rawData.机遇与危机.待办事项[key]; },
-  restoreActiveItem: (key, data) => { gameData.rawData.机遇与危机.待办事项[key] = data; },
+  deleteActiveItem: key => {
+    delete gameData.rawData.机遇与危机.待办事项[key];
+  },
+  restoreActiveItem: (key, data) => {
+    gameData.rawData.机遇与危机.待办事项[key] = data;
+  },
   saveToBackend: () => gameData.saveSection('机遇与危机'),
   // 按紧急程度排序，保持相同紧急程度内的原始顺序
   sortFn: (a, b) => {
-  const order: Record<string, number> = { 火烧眉毛: 0, 尽快处理: 1, 正常推进: 2, 可以缓缓: 3 };
+    const order: Record<string, number> = { 火烧眉毛: 0, 尽快处理: 1, 正常推进: 2, 可以缓缓: 3 };
     const orderA = order[a.data.紧急程度] ?? 99;
     const orderB = order[b.data.紧急程度] ?? 99;
     if (orderA !== orderB) return orderA - orderB;
@@ -237,8 +263,9 @@ function urgencyClass(level: string) {
   border-radius: var(--radius-lg);
   overflow: hidden;
   min-height: 0;
-  transition: transform var(--transition-fast),
-              box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &:hover {
     transform: translateY(-2px);
@@ -247,15 +274,21 @@ function urgencyClass(level: string) {
 
   &.danger-column {
     border-top: 3px solid var(--color-danger);
-    &:hover { box-shadow: 0 8px 24px rgba(255, 107, 107, 0.15); }
+    &:hover {
+      box-shadow: 0 8px 24px rgba(255, 107, 107, 0.15);
+    }
   }
   &.success-column {
     border-top: 3px solid var(--color-success);
-    &:hover { box-shadow: 0 8px 24px rgba(74, 193, 142, 0.15); }
+    &:hover {
+      box-shadow: 0 8px 24px rgba(74, 193, 142, 0.15);
+    }
   }
   &.todo-column {
     border-top: 3px solid var(--color-info);
-    &:hover { box-shadow: 0 8px 24px rgba(122, 162, 247, 0.15); }
+    &:hover {
+      box-shadow: 0 8px 24px rgba(122, 162, 247, 0.15);
+    }
   }
 }
 
@@ -280,9 +313,15 @@ function urgencyClass(level: string) {
     }
   }
 
-  .danger-column & h3 i { color: var(--color-danger); }
-  .success-column & h3 i { color: var(--color-success); }
-  .todo-column & h3 i { color: var(--color-info); }
+  .danger-column & h3 i {
+    color: var(--color-danger);
+  }
+  .success-column & h3 i {
+    color: var(--color-success);
+  }
+  .todo-column & h3 i {
+    color: var(--color-info);
+  }
 
   .column-count {
     padding: 2px 8px;
@@ -320,30 +359,41 @@ function urgencyClass(level: string) {
 
   &.danger {
     border-left-color: var(--color-danger);
-    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2); }
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2);
+    }
   }
   &.success {
     border-left-color: var(--color-success);
-    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(74, 193, 142, 0.2); }
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(74, 193, 142, 0.2);
+    }
   }
   &.todo {
     border-left-color: var(--color-info);
-    &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.2); }
+    &:hover:not(.completed) {
+      box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.2);
+    }
 
     &.urgent {
       border-left-color: var(--color-danger);
-      &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2); }
+      &:hover:not(.completed) {
+        box-shadow: inset 0 0 0 1px rgba(255, 107, 107, 0.2);
+      }
     }
     &.high {
       border-left-color: var(--color-warning);
-      &:hover:not(.completed) { box-shadow: inset 0 0 0 1px rgba(224, 195, 108, 0.2); }
+      &:hover:not(.completed) {
+        box-shadow: inset 0 0 0 1px rgba(224, 195, 108, 0.2);
+      }
     }
   }
 
   &.completed {
     opacity: 0.5;
 
-    .kanban-title, .kanban-content {
+    .kanban-title,
+    .kanban-content {
       text-decoration: line-through;
       color: var(--color-text-muted);
     }
@@ -394,8 +444,10 @@ function urgencyClass(level: string) {
     border-color: var(--color-success);
     background: rgba(74, 193, 142, 0.1);
 
-    &::after { display: block; }
-}
+    &::after {
+      display: block;
+    }
+  }
 
   &:hover .checkmark {
     border-color: var(--color-text-muted);
@@ -423,7 +475,8 @@ function urgencyClass(level: string) {
   flex: 1;
 }
 
-.level-badge, .urgency-badge {
+.level-badge,
+.urgency-badge {
   padding: 2px 6px;
   font-size: 9px;
   font-weight: 600;
@@ -436,7 +489,8 @@ function urgencyClass(level: string) {
     background: linear-gradient(90deg, #ffd700, #ffec8b);
     color: var(--color-bg-dark);
   }
-  &.epic, &.good {
+  &.epic,
+  &.good {
     background: rgba(74, 193, 142, 0.2);
     color: var(--color-success);
   }
@@ -444,7 +498,8 @@ function urgencyClass(level: string) {
     background: rgba(255, 107, 107, 0.2);
     color: var(--color-danger);
   }
-  &.severe, &.moderate {
+  &.severe,
+  &.moderate {
     background: rgba(224, 195, 108, 0.2);
     color: var(--color-warning);
   }
