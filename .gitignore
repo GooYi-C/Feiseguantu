@@ -1,0 +1,5 @@
+# 只跟踪 dist 文件夹
+*
+!dist/
+!dist/**
+!.gitignore
