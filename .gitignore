@@ -1,5 +1,5 @@
-# 只跟踪 dist 文件夹
+# 只跟踪 Card 文件夹
 *
-!dist/
-!dist/**
+!Card/
+!Card/**
 !.gitignore
