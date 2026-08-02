@@ -3,6 +3,6 @@
 !Card/
 !Card/**
 !dist/
-!dist/绯色官途角色卡/
-!dist/绯色官途角色卡/**
+!dist/feiseguantu/
+!dist/feiseguantu/**
 !.gitignore
