@@ -1,5 +1,8 @@
-# 只跟踪 Card 文件夹
+# 只跟踪 Card 文件夹 和 绯色官途前端产物
 *
 !Card/
 !Card/**
+!dist/
+!dist/绯色官途角色卡/
+!dist/绯色官途角色卡/**
 !.gitignore
